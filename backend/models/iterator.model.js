@@ -37,6 +37,10 @@ const travelRequestSchema = new mongoose.Schema({
         type: String,
         required: false,
     },
+    budget: {
+        type: Number,
+        required: false,
+    },
 }, {
     timestamps: true
 });

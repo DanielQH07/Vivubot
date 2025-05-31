@@ -12,18 +12,43 @@ export const getTravelPlans = async (req, res) => {
 };
 
 export const createTravelPlan = async (req, res) => {
-    const { name, destination, startDate } = req.body;
-    if (!name || !destination || !startDate) {
-        return res.status(400).json({ success: false, message: 'All fields are required' });
+    const { 
+        user_name,
+        departure,
+        destination,
+        outbound_date,
+        return_date,
+        adults_num,
+        children_num,
+        children_ages,
+        restaurant_preference
+    } = req.body;
+
+    // Check required fields
+    if (!user_name || !departure || !destination || !outbound_date || !return_date || !adults_num || !children_num) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Required fields are missing. Please provide user_name, departure, destination, outbound_date, return_date, adults_num, and children_num' 
+        });
     }
 
     try {
-        const newPlan = new TravelPlan({ name, destination, startDate });
+        const newPlan = new TravelPlan({
+            user_name,
+            departure,
+            destination,
+            outbound_date,
+            return_date,
+            adults_num,
+            children_num,
+            children_ages,
+            restaurant_preference
+        });
         await newPlan.save();
         res.status(201).json({ success: true, data: newPlan });
     } catch (error) {
         console.error("Error in creating plan:", error.message);
-        res.status(500).json({ success: false, message: 'Server Error' });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
