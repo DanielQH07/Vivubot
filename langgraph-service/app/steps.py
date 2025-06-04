@@ -3,16 +3,43 @@ import google.generativeai as genai
 import os
 from typing import Dict, Any
 
-# Initialize AI clients
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# Initialize AI clients with error handling
+try:
+    # Support for Monica.im or standard OpenAI
+    openai_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    
+    if openai_api_key:
+        openai_client = OpenAI(
+            api_key=openai_api_key,
+            base_url=openai_base_url
+        )
+        print(f"✅ OpenAI client initialized with base_url: {openai_base_url}")
+    else:
+        openai_client = None
+        print("⚠️ OPENAI_API_KEY not found, OpenAI client not initialized")
+        
+except Exception as e:
+    print(f"❌ Error initializing OpenAI client: {e}")
+    openai_client = None
+
+# Initialize Gemini
+try:
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    if gemini_api_key:
+        genai.configure(api_key=gemini_api_key)
+        print("✅ Gemini client initialized")
+    else:
+        print("⚠️ GEMINI_API_KEY not found, Gemini client not initialized")
+except Exception as e:
+    print(f"❌ Error initializing Gemini client: {e}")
 
 def preprocess_input(state: Dict[str, Any]) -> Dict[str, Any]:
     """Preprocess user input and prepare prompt"""
     user_input = state.get("user_input", "")
-    ai_provider = state.get("ai_provider", "gpt")  # Default to GPT
+    ai_provider = state.get("ai_provider", "gpt")  
     
-    prompt = f"""Bạn là một chuyên gia lập kế hoạch du lịch. Hãy lên kế hoạch du lịch chi tiết dựa trên yêu cầu sau:
+    prompt = f"""Bạn là một chuyên gia lập kế hoạch du lịch. Hãy tư vấn chi tiết lịch trình vui chơi, ăn uống, địa điểm du lịch, tổng chi tiêu (tóm lại là tư vấn du lịch chi tiết) cho nội dung sau:
 
 {user_input}
 
@@ -37,6 +64,8 @@ def call_ai(state: Dict[str, Any]) -> Dict[str, Any]:
     
     try:
         if ai_provider.lower() == "gpt":
+            if openai_client is None:
+                raise Exception("OpenAI client not initialized. Check your OPENAI_API_KEY.")
             response = call_gpt(prompt)
         elif ai_provider.lower() == "gemini":
             response = call_gemini(prompt)
@@ -54,7 +83,10 @@ def call_ai(state: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 def call_gpt(prompt: str) -> str:
-    """Call OpenAI GPT API"""
+    """Call OpenAI GPT API (supports Monica.im)"""
+    if openai_client is None:
+        raise Exception("OpenAI client not available")
+        
     response = openai_client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],

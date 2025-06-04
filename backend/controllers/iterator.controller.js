@@ -1,9 +1,9 @@
-import TravelPlan from '../models/iterator.model.js';
+import TravelRequest from '../models/iterator.model.js';
 import mongoose from 'mongoose';
 
 export const getTravelPlans = async (req, res) => {
     try {
-        const plans = await TravelPlan.find();
+        const plans = await TravelRequest.find();
         res.status(200).json({ success: true, data: plans });
     } catch (error) {
         console.error("Error in fetching plans:", error.message);
@@ -21,11 +21,12 @@ export const createTravelPlan = async (req, res) => {
         adults_num,
         children_num,
         children_ages,
-        restaurant_preference
+        restaurant_preference,
+        budget
     } = req.body;
 
     // Check required fields
-    if (!user_name || !departure || !destination || !outbound_date || !return_date || !adults_num || !children_num) {
+    if (!user_name || !departure || !destination || !outbound_date || !return_date || adults_num === undefined || children_num === undefined) {
         return res.status(400).json({ 
             success: false, 
             message: 'Required fields are missing. Please provide user_name, departure, destination, outbound_date, return_date, adults_num, and children_num' 
@@ -33,7 +34,7 @@ export const createTravelPlan = async (req, res) => {
     }
 
     try {
-        const newPlan = new TravelPlan({
+        const newPlan = new TravelRequest({
             user_name,
             departure,
             destination,
@@ -42,7 +43,8 @@ export const createTravelPlan = async (req, res) => {
             adults_num,
             children_num,
             children_ages,
-            restaurant_preference
+            restaurant_preference,
+            budget
         });
         await newPlan.save();
         res.status(201).json({ success: true, data: newPlan });
@@ -61,7 +63,7 @@ export const updateTravelPlan = async (req, res) => {
     }
 
     try {
-        const updatedPlan = await TravelPlan.findByIdAndUpdate(id, updateData, { new: true });
+        const updatedPlan = await TravelRequest.findByIdAndUpdate(id, updateData, { new: true });
         if (!updatedPlan) {
             return res.status(404).json({ success: false, message: 'Plan not found' });
         }
@@ -80,7 +82,7 @@ export const deleteTravelPlan = async (req, res) => {
     }
 
     try {
-        const deletedPlan = await TravelPlan.findByIdAndDelete(id);
+        const deletedPlan = await TravelRequest.findByIdAndDelete(id);
         if (!deletedPlan) {
             return res.status(404).json({ success: false, message: 'Plan not found' });
         }

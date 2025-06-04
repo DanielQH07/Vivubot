@@ -17,7 +17,17 @@ import {
   Divider,
   Badge,
   Flex,
-  useToast
+  useToast,
+  Textarea,
+  Select,
+  Spinner,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure
 } from '@chakra-ui/react';
 
 const TravelPlanPage = ({ user }) => {
@@ -30,11 +40,16 @@ const TravelPlanPage = ({ user }) => {
     adults_num: 1,
     children_num: 0,
     children_ages: '',
-    restaurant_preference: ''
+    restaurant_preference: '',
+    budget: ''
   });
   const [travelPlans, setTravelPlans] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiItinerary, setAiItinerary] = useState('');
+  const [aiProvider, setAiProvider] = useState('gpt');
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
   useEffect(() => {
@@ -62,6 +77,62 @@ const TravelPlanPage = ({ user }) => {
       ...formData,
       [name]: type === 'number' ? parseInt(value) || 0 : value
     });
+  };
+
+  const generateAIItinerary = async () => {
+    setIsGeneratingAI(true);
+    
+    try {
+      // Create prompt from form data
+      const prompt = `Tôi muốn đi du lịch từ ${formData.departure} đến ${formData.destination} 
+      từ ngày ${formData.outbound_date} đến ${formData.return_date}.
+      Số người lớn: ${formData.adults_num}, số trẻ em: ${formData.children_num}
+      ${formData.children_ages ? `Tuổi trẻ em: ${formData.children_ages}` : ''}
+      ${formData.restaurant_preference ? `Sở thích ăn uống: ${formData.restaurant_preference}` : ''}
+      ${formData.budget ? `Ngân sách: ${formData.budget} VND` : ''}
+      
+      Hãy lập kế hoạch du lịch chi tiết cho tôi.`;
+
+      const response = await fetch('http://127.0.0.1:8000/generate-itinerary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: prompt,
+          ai_provider: aiProvider
+        }),
+      });
+
+      const data = await response.json();
+      console.log("GPT Output:", data);
+
+      if (response.ok && data.success) {
+        setAiItinerary(data.output);
+        onOpen(); // Open modal to show AI result
+        
+        toast({
+          title: "AI Itinerary Generated!",
+          description: "Your AI travel itinerary has been generated successfully.",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      } else {
+        throw new Error(data.detail || 'Failed to generate AI itinerary');
+      }
+    } catch (error) {
+      console.error('Error generating AI itinerary:', error);
+      toast({
+        title: "AI Generation Failed",
+        description: error.message || 'Please check if LangGraph service is running on port 8000',
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsGeneratingAI(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -99,7 +170,8 @@ const TravelPlanPage = ({ user }) => {
           adults_num: 1,
           children_num: 0,
           children_ages: '',
-          restaurant_preference: ''
+          restaurant_preference: '',
+          budget: ''
         });
         
         // Refresh travel plans
@@ -130,7 +202,7 @@ const TravelPlanPage = ({ user }) => {
     <Container maxW="6xl" py={8}>
       <VStack spacing={8} align="stretch">
         <Heading textAlign="center" color="teal.500">
-          Travel Plan Manager
+          AI-Powered Travel Plan Manager
         </Heading>
 
         {/* Create Travel Plan Form */}
@@ -206,6 +278,13 @@ const TravelPlanPage = ({ user }) => {
                 value={formData.children_ages}
                 onChange={handleChange}
               />
+              <Input
+                name="budget"
+                type="number"
+                placeholder="Budget (VND)"
+                value={formData.budget}
+                onChange={handleChange}
+              />
             </SimpleGrid>
             
             <Input
@@ -215,6 +294,38 @@ const TravelPlanPage = ({ user }) => {
               onChange={handleChange}
               mb={4}
             />
+
+            {/* AI Generation Section */}
+            <Box bg={useColorModeValue('blue.50', 'blue.900')} p={4} rounded="md" mb={4}>
+              <VStack spacing={3}>
+                <Heading size="sm" color="blue.600">
+                  🤖 AI Travel Assistant
+                </Heading>
+                <HStack spacing={4} width="full">
+                  <Select
+                    value={aiProvider}
+                    onChange={(e) => setAiProvider(e.target.value)}
+                    width="auto"
+                  >
+                    <option value="gpt">GPT (Monica/OpenAI)</option>
+                    <option value="gemini">Google Gemini</option>
+                  </Select>
+                  <Button
+                    colorScheme="blue"
+                    onClick={generateAIItinerary}
+                    isLoading={isGeneratingAI}
+                    loadingText="Generating..."
+                    isDisabled={!formData.departure || !formData.destination}
+                    leftIcon={isGeneratingAI ? <Spinner size="sm" /> : null}
+                  >
+                    Generate AI Itinerary
+                  </Button>
+                </HStack>
+                <Text fontSize="xs" color="gray.600" textAlign="center">
+                  Fill in departure and destination to generate AI travel recommendations
+                </Text>
+              </VStack>
+            </Box>
             
             <Button
               type="submit"
@@ -223,10 +334,37 @@ const TravelPlanPage = ({ user }) => {
               isLoading={isLoading}
               loadingText="Creating..."
             >
-              Create Travel Plan
+              Save Travel Plan
             </Button>
           </form>
         </Box>
+
+        {/* AI Itinerary Modal */}
+        <Modal isOpen={isOpen} onClose={onClose} size="4xl">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>🤖 AI Generated Travel Itinerary</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody pb={6}>
+              <Box
+                bg={useColorModeValue('gray.50', 'gray.700')}
+                p={4}
+                rounded="md"
+                maxH="60vh"
+                overflowY="auto"
+              >
+                <Text whiteSpace="pre-wrap" fontSize="sm">
+                  {aiItinerary}
+                </Text>
+              </Box>
+              <HStack mt={4} justify="center">
+                <Badge colorScheme="blue">
+                  Generated by {aiProvider.toUpperCase()}
+                </Badge>
+              </HStack>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
 
         {/* Travel Plans List */}
         <Box>
@@ -268,6 +406,9 @@ const TravelPlanPage = ({ user }) => {
                         )}
                         {plan.restaurant_preference && (
                           <Text><strong>Restaurant Preference:</strong> {plan.restaurant_preference}</Text>
+                        )}
+                        {plan.budget && (
+                          <Text><strong>Budget:</strong> {plan.budget.toLocaleString()} VND</Text>
                         )}
                         <Text color="gray.500" fontSize="xs">
                           Created: {new Date(plan.createdAt).toLocaleDateString()}
