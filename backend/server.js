@@ -1,21 +1,37 @@
-//const express = require('express');
 import express from 'express';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
-import productRoute from './routes/product.route.js';
+import iteratorRoutes from './routes/iterator.route.js';
+import authRoutes from './routes/auth.route.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000; // use the port from .env file or 5000
+const PORT = process.env.PORT || 5000;
 
-app.use(express.json()); // to parse JSON data
+// Kết nối Database
+connectDB();
 
-app.use("/api/products", productRoute); // use product routes
+// CORS middleware
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+        res.sendStatus(200);
+    } else {
+        next();
+    }
+});
 
-// Postman desktop app
+// Middleware để parse JSON từ request body
+app.use(express.json());
 
-app.listen(PORT, () => {   
-    connectDB();
-    console.log('Server is started at http://localhost:5000');
+// Khai báo các routes
+app.use("/api/iterator", iteratorRoutes);
+app.use("/api/auth", authRoutes);
+
+// Khởi động server
+app.listen(PORT, () => {
+    console.log(`🚀 Server is running at http://localhost:${PORT}`);
 });
