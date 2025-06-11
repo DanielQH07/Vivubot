@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
 import iteratorRoutes from './routes/iterator.route.js';
 import authRoutes from './routes/auth.route.js';
+import chatRoutes from './routes/chat.route.js';
 
 dotenv.config();
 
@@ -30,8 +31,9 @@ app.use(express.json());
 // Khai báo các routes
 app.use("/api/iterator", iteratorRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/chat", chatRoutes);
 
 // Khởi động server
 app.listen(PORT, () => {
-    console.log(`🚀 Server is running at http://localhost:${PORT}`);
-});
+    console.log(`Server is running on port ${PORT}`);
+})

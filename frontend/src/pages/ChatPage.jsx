@@ -1,5 +1,5 @@
 // ChatPage.jsx
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image } from '@chakra-ui/react'
 import { ChatIcon, SearchIcon, SettingsIcon } from '@chakra-ui/icons'
 import { FaPaperPlane } from 'react-icons/fa'
@@ -11,12 +11,12 @@ import 'leaflet/dist/leaflet.css'
 import Split from 'react-split'
 import MapPreview from '../components/MapPreview'
 
-const Sidebar = () => {
+const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }) => {
   const { pathname } = useLocation()
   return (
     <Flex
       direction="column"
-      w="200px"
+      w="220px"
       bg="gray.50"
       borderRight="1px solid"
       borderColor="gray.200"
@@ -29,6 +29,35 @@ const Sidebar = () => {
         <Image src="/logo.svg" boxSize="60px" />
         <Text fontWeight="bold">VIVUBOT</Text>
         <Text fontSize="sm" color="gray.500">TRAVEL ASSISTANT</Text>
+      </VStack>
+
+      {/* New Chat Button */}
+      <Box mt={4} mb={2}>
+        <IconButton colorScheme="teal" size="sm" onClick={onNewChat} icon={<ChatIcon />} aria-label="New Chat" w="full">
+          New Chat
+        </IconButton>
+      </Box>
+
+      {/* Session List */}
+      <VStack align="stretch" spacing={1} maxH="300px" overflowY="auto" mb={4}>
+        {sessions.map(s => (
+          <Box
+            key={s.sessionId}
+            p={2}
+            borderRadius="md"
+            bg={s.sessionId === currentSessionId ? 'teal.100' : 'gray.100'}
+            cursor="pointer"
+            onClick={() => onSelectSession(s.sessionId)}
+            _hover={{ bg: 'teal.50' }}
+          >
+            <Text fontSize="sm" noOfLines={1}>
+              {s.sessionId.slice(0, 8)}... ({s.messageCount} msg)
+            </Text>
+            <Text fontSize="xs" color="gray.500">
+              {new Date(s.createdAt).toLocaleString()}
+            </Text>
+          </Box>
+        ))}
       </VStack>
 
       {/* Nav */}
@@ -48,7 +77,7 @@ const Sidebar = () => {
       </VStack>
 
       {/* User */}
-      <HStack spacing={2}>
+      <HStack spacing={2} mt={4}>
         <SettingsIcon />
         <Text>username</Text>
       </HStack>
@@ -56,13 +85,62 @@ const Sidebar = () => {
   )
 }
 
-const Chat = () => {
+const getSessionId = () => {
+  let sessionId = localStorage.getItem('vivubot_session_id');
+  if (!sessionId) {
+    sessionId = Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('vivubot_session_id', sessionId);
+  }
+  return sessionId;
+};
+
+const Chat = ({ user }) => {
   const [messages, setMessages] = useState([
     { sender: 'bot', text: "Hi, I'm vivu!" }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [route, setRoute] = useState([]);
+  const [sessionId, setSessionId] = useState(() => getSessionId());
+  const [sessions, setSessions] = useState([]);
+
+  // Lấy lịch sử chat khi load trang hoặc đổi sessionId
+  useEffect(() => {
+    axios.get(`http://localhost:5000/api/chat/history/${sessionId}`)
+      .then(res => {
+        if (res.data.messages && res.data.messages.length > 0) {
+          setMessages(res.data.messages.map(m => ({ sender: m.sender, text: m.message })));
+        } else {
+          setMessages([{ sender: 'bot', text: "Hi, I'm vivu!" }]);
+        }
+      })
+      .catch(() => {
+        setMessages([{ sender: 'bot', text: "Hi, I'm vivu!" }]);
+      });
+  }, [sessionId]);
+
+  // Lấy danh sách các phiên chat
+  useEffect(() => {
+    if (user && user.id) {
+      axios.get(`http://localhost:5000/api/chat/sessions?userId=${user.id}`)
+        .then(res => {
+          setSessions(res.data.sessions || []);
+        })
+        .catch(() => setSessions([]));
+    }
+  }, [user, sessionId, loading]);
+
+  // Lưu message vào backend
+  const saveMessage = async (sender, message) => {
+    try {
+      await axios.post('http://localhost:5000/api/chat/save-message', {
+        sessionId,
+        sender,
+        message,
+        userId: user && user.id ? user.id : undefined
+      });
+    } catch (err) {}
+  };
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -71,6 +149,7 @@ const Chat = () => {
     setMessages(newMessages);
     setInput('');
     setLoading(true);
+    await saveMessage('user', input);
 
     // Tạo history từ các messages trước đó (bỏ message bot chào hỏi nếu cần)
     const buildHistory = (msgs) =>
@@ -87,16 +166,18 @@ const Chat = () => {
         ai_provider: "gpt",
         history: buildHistory(newMessages.slice(0, -1)) // chỉ lấy history trước message hiện tại
       });
-      setMessages((msgs) => [
-        ...msgs,
-        { sender: 'bot', text: res.data.output || "No response from AI." }
-      ]);
+      setMessages((msgs) => {
+        const updated = [...msgs, { sender: 'bot', text: res.data.output || "No response from AI." }];
+        saveMessage('bot', res.data.output || "No response from AI.");
+        return updated;
+      });
       setRoute(res.data.route);
     } catch (err) {
-      setMessages((msgs) => [
-        ...msgs,
-        { sender: 'bot', text: "Sorry, I couldn't get a response from the AI." }
-      ]);
+      setMessages((msgs) => {
+        const updated = [...msgs, { sender: 'bot', text: "Sorry, I couldn't get a response from the AI." }];
+        saveMessage('bot', "Sorry, I couldn't get a response from the AI.");
+        return updated;
+      });
     } finally {
       setLoading(false);
     }
@@ -106,9 +187,29 @@ const Chat = () => {
     if (e.key === 'Enter') sendMessage();
   };
 
+  // Tạo phiên chat mới
+  const handleNewChat = () => {
+    const newSessionId = Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('vivubot_session_id', newSessionId);
+    setSessionId(newSessionId);
+    setMessages([{ sender: 'bot', text: "Hi, I'm vivu!" }]);
+    setRoute([]);
+  };
+
+  // Chọn lại phiên chat cũ
+  const handleSelectSession = (sid) => {
+    localStorage.setItem('vivubot_session_id', sid);
+    setSessionId(sid);
+  };
+
   return (
     <Flex h="100vh">
-      <Sidebar />
+      <Sidebar
+        sessions={sessions}
+        onNewChat={handleNewChat}
+        onSelectSession={handleSelectSession}
+        currentSessionId={sessionId}
+      />
       <Box flex="1" h="100vh">
         <Split
           className="split"
