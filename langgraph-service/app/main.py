@@ -30,6 +30,7 @@ compiled_graph = build_travel_graph()
 class TravelRequest(BaseModel):
     text: str
     ai_provider: Optional[str] = "gpt"  # "gpt" or "gemini"
+    history: Optional[list] = []  # Danh sách các tin nhắn chat
 
 class TravelResponse(BaseModel):
     output: str
@@ -61,7 +62,8 @@ async def generate_itinerary(travel_request: TravelRequest):
         # Invoke the compiled graph
         result = compiled_graph.invoke({
             "user_input": travel_request.text,
-            "ai_provider": travel_request.ai_provider
+            "ai_provider": travel_request.ai_provider,
+            "history": travel_request.history or []
         })
         
         return TravelResponse(

@@ -35,22 +35,24 @@ except Exception as e:
     print(f"❌ Error initializing Gemini client: {e}")
 
 def preprocess_input(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Preprocess user input and prepare prompt"""
+    """Preprocess user input and prepare prompt, hỗ trợ truyền history chat"""
     user_input = state.get("user_input", "")
     ai_provider = state.get("ai_provider", "gpt")  
+    history = state.get("history", [])
+
+    # Format lại history thành đoạn hội thoại
+    history_text = ""
+    if history and isinstance(history, list):
+        for msg in history:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role == "user":
+                history_text += f"Người dùng: {content}\n"
+            else:
+                history_text += f"Bot: {content}\n"
     
-    prompt = f"""Bạn là một chuyên gia lập kế hoạch du lịch. Hãy tư vấn chi tiết lịch trình vui chơi, ăn uống, địa điểm du lịch, tổng chi tiêu (tóm lại là tư vấn du lịch chi tiết) cho nội dung sau:
-
-{user_input}
-
-Hãy bao gồm:
-- Lịch trình theo ngày
-- Địa điểm tham quan
-- Gợi ý ăn uống
-- Phương tiện di chuyển
-- Chi phí ước tính
-
-Trả lời bằng tiếng Việt."""
+    # Prompt có thể chỉnh sửa output bằng cách thay đổi format dưới đây
+    prompt = f"""Bạn là một chuyên gia lập kế hoạch du lịch. Hãy tư vấn chi tiết lịch trình vui chơi, ăn uống, địa điểm du lịch, tổng chi tiêu (tóm lại là tư vấn du lịch chi tiết) cho hội thoại sau:\n\n{history_text}Người dùng: {user_input}\n\nHãy bao gồm:\n- Lịch trình theo ngày\n- Địa điểm tham quan\n- Gợi ý ăn uống\n- Phương tiện di chuyển\n- Chi phí ước tính\n\nTrả lời bằng tiếng Việt."""
     
     return {
         **state,

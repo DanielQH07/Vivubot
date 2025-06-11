@@ -8,6 +8,7 @@ class TravelState(TypedDict):
     itinerary: str
     output: str
     ai_provider: str
+    history: list  # Danh sách các tin nhắn chat (dict: {role, content})
 
 def build_travel_graph():
     """Build and compile the travel planning graph"""

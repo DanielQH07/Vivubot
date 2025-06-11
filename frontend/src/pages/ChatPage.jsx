@@ -67,14 +67,25 @@ const Chat = () => {
   const sendMessage = async () => {
     if (!input.trim()) return;
     const userMessage = { sender: 'user', text: input };
-    setMessages((msgs) => [...msgs, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInput('');
     setLoading(true);
+
+    // Tạo history từ các messages trước đó (bỏ message bot chào hỏi nếu cần)
+    const buildHistory = (msgs) =>
+      msgs
+        .filter(m => m.sender === 'user' || m.sender === 'bot')
+        .map(m => ({
+          role: m.sender === 'user' ? 'user' : 'assistant',
+          content: m.text
+        }));
 
     try {
       const res = await axios.post('http://localhost:8000/generate-itinerary', {
         text: input,
-        ai_provider: "gpt" // or "gemini"
+        ai_provider: "gpt",
+        history: buildHistory(newMessages.slice(0, -1)) // chỉ lấy history trước message hiện tại
       });
       setMessages((msgs) => [
         ...msgs,
