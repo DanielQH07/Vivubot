@@ -8,7 +8,7 @@ import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import Split from 'react-split'
+import SplitPane from 'react-split-pane'
 import MapPreview from '../components/MapPreview'
 
 const Sidebar = () => {
@@ -26,7 +26,7 @@ const Sidebar = () => {
     >
       {/* Logo */}
       <VStack spacing={1} align="center">
-        <Image src="/logo.svg" boxSize="60px" />
+        <Image src="/logo.png" boxSize="60px" />
         <Text fontWeight="bold">VIVUBOT</Text>
         <Text fontSize="sm" color="gray.500">TRAVEL ASSISTANT</Text>
       </VStack>
@@ -50,7 +50,7 @@ const Sidebar = () => {
       {/* User */}
       <HStack spacing={2}>
         <SettingsIcon />
-        <Text>username</Text>
+        <Text>Username</Text>
       </HStack>
     </Flex>
   )
@@ -67,25 +67,14 @@ const Chat = () => {
   const sendMessage = async () => {
     if (!input.trim()) return;
     const userMessage = { sender: 'user', text: input };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    setMessages((msgs) => [...msgs, userMessage]);
     setInput('');
     setLoading(true);
-
-    // Tạo history từ các messages trước đó (bỏ message bot chào hỏi nếu cần)
-    const buildHistory = (msgs) =>
-      msgs
-        .filter(m => m.sender === 'user' || m.sender === 'bot')
-        .map(m => ({
-          role: m.sender === 'user' ? 'user' : 'assistant',
-          content: m.text
-        }));
 
     try {
       const res = await axios.post('http://localhost:8000/generate-itinerary', {
         text: input,
-        ai_provider: "gpt",
-        history: buildHistory(newMessages.slice(0, -1)) // chỉ lấy history trước message hiện tại
+        ai_provider: "gpt" // or "gemini"
       });
       setMessages((msgs) => [
         ...msgs,
@@ -107,24 +96,20 @@ const Chat = () => {
   };
 
   return (
-    <Flex h="100vh">
-      <Sidebar />
-      <Box flex="1" h="100vh">
-        <Split
-          className="split"
-          sizes={[60, 40]}
-          minSize={200}
-          gutterSize={8}
-          direction="horizontal"
-          style={{ display: 'flex', height: '100%' }}
-        >
-          <Box p={4} h="100%" overflow="auto">
-            {/* Chat content here */}
+    <SplitPane split="vertical" minSize={300} defaultSize="75%">
+      <Box>
+        <Flex h="100vh">
+          <Sidebar />
+
+          {/* Chat Content */}
+          <Flex direction="column" flex={1} p={6} bg="white">
+            {/* Header */}
             <VStack align="start" spacing={2}>
               <Text fontSize="2xl" fontWeight="bold">Where will you go today?</Text>
               <Text color="gray.500">You can ask me anything about travel.</Text>
             </VStack>
 
+            {/* Messages */}
             <Box flex={1} my={6} overflowY="auto">
               <VStack spacing={4} align="stretch">
                 {messages.map((msg, idx) => (
@@ -166,6 +151,7 @@ const Chat = () => {
               </VStack>
             </Box>
 
+            {/* Input */}
             <InputGroup>
               <Input
                 placeholder="Ask anything..."
@@ -185,13 +171,13 @@ const Chat = () => {
                 />
               </InputRightElement>
             </InputGroup>
-          </Box>
-          <Box h="100%" overflow="auto">
-            <MapPreview />
-          </Box>
-        </Split>
+          </Flex>
+        </Flex>
       </Box>
-    </Flex>
+      <Box>
+        <MapPreview route={[[10.7769, 106.7009], [11.9404, 108.4583]]} />
+      </Box>
+    </SplitPane>
   )
 }
 

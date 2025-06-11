@@ -21,7 +21,7 @@ const Sidebar = () => {
     >
       {/* Logo */}
       <VStack spacing={1} align="center">
-        <Image src="/logo.svg" boxSize="60px" />
+        <Image src="/logo.png" boxSize="60px" />
         <Text fontWeight="bold">VIVUBOT</Text>
         <Text fontSize="sm" color="gray.500">TRAVEL ASSISTANT</Text>
       </VStack>
@@ -45,7 +45,7 @@ const Sidebar = () => {
       {/* User */}
       <HStack spacing={2}>
         <SettingsIcon />
-        <Text>username</Text>
+        <Text>Username</Text>
       </HStack>
     </Flex>
   )
