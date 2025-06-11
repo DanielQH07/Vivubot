@@ -4,14 +4,16 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 
-const LoginPage = ({ onLogin }) => {
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading]   = useState(false);
+const SignupPage = () => {
+  const [username, setUsername]       = useState('');
+  const [email, setEmail]             = useState('');
+  const [password, setPassword]       = useState('');
+  const [confirmPassword, setConfirm] = useState('');
+  const [loading, setLoading]         = useState(false);
   const toast    = useToast();
   const navigate = useNavigate();
 
-  // giữ nguyên styles của HomePage cho navbar
+  // styles navbar giống HomePage
   const styles = {
     navbar: {
       display: 'flex',
@@ -37,19 +39,27 @@ const LoginPage = ({ onLogin }) => {
   };
 
   const handleSubmit = async () => {
+    if (password !== confirmPassword) {
+      return toast({
+        title: 'Error',
+        description: 'Password và Confirm Password không khớp',
+        status: 'error',
+        duration: 3000,
+        isClosable: true
+      });
+    }
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
+      const res = await fetch('http://localhost:5000/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ username, email, password })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
+      if (!res.ok) throw new Error(data.message || 'Signup failed');
 
-      onLogin(data.token, data.user);
-      toast({ title: 'Đăng nhập thành công', status: 'success', duration: 3000, isClosable: true });
-      navigate('/chat');
+      toast({ title: 'Đăng ký thành công', description: data.message, status: 'success', duration: 3000, isClosable: true });
+      navigate('/login');
     } catch (err) {
       toast({ title: 'Error', description: err.message, status: 'error', duration: 4000, isClosable: true });
     } finally {
@@ -59,16 +69,14 @@ const LoginPage = ({ onLogin }) => {
 
   return (
     <Flex w="100vw" h="100vh">
-      {/* phần hình bên trái */}
       <Box flex={1}
         bgImage="url('https://png.pngtree.com/png-clipart/20240905/original/pngtree-stack-of-plain-pancakes-png-image_15935323.png')"
         bgSize="cover"
       />
 
-      {/* phần form bên phải */}
       <Flex flex={1} direction="column" bgGradient="linear(to-r, #003D5B, #002A3A)" color="white">
 
-        {/* Navbar y hệt HomePage */}
+        {/* Navbar */}
         <Box style={styles.navbar}>
           <Box style={styles.logo}>🤖</Box>
           <Box style={styles.brandName}>VIVUBOT</Box>
@@ -76,8 +84,14 @@ const LoginPage = ({ onLogin }) => {
         </Box>
 
         <Box flex={1} p={10}>
-          <Heading mb={10}>Login</Heading>
+          <Heading mb={10}>Sign Up</Heading>
           <VStack spacing={4} align="stretch">
+            <Input
+              placeholder="Username"
+              bg="white" color="black"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+            />
             <Input
               placeholder="Email"
               type="email"
@@ -92,13 +106,20 @@ const LoginPage = ({ onLogin }) => {
               value={password}
               onChange={e => setPassword(e.target.value)}
             />
+            <Input
+              placeholder="Confirm Password"
+              type="password"
+              bg="white" color="black"
+              value={confirmPassword}
+              onChange={e => setConfirm(e.target.value)}
+            />
             <Button colorScheme="teal" isLoading={loading} onClick={handleSubmit}>
-              Login
+              Sign Up
             </Button>
             <Text>
-              Chưa có tài khoản?{' '}
-              <Text as="span" color="teal.200" cursor="pointer" onClick={() => navigate('/signup')}>
-                Sign up
+              Đã có tài khoản?{' '}
+              <Text as="span" color="teal.200" cursor="pointer" onClick={() => navigate('/login')}>
+                Login
               </Text>
             </Text>
           </VStack>
@@ -108,4 +129,4 @@ const LoginPage = ({ onLogin }) => {
   );
 };
 
-export default LoginPage;
+export default SignupPage;
