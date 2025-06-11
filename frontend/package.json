@@ -22,7 +22,8 @@
     "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.6.0",
-    "react-split-pane": "^0.1.92",
+    "react-split": "^2.0.14",
+    "split.js": "^1.6.5",
     "zustand": "^5.0.4"
   },
   "devDependencies": {

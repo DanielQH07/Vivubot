@@ -158,6 +158,8 @@ cd frontend
 
 # Cài đặt dependencies
 npm install
+# Cài đặt thêm split pane
+npm install react-split split.js
 
 # Chạy frontend development server
 npm run dev

@@ -1,26 +1,27 @@
 import React from "react";
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import SplitPane from "react-split-pane";
 import { Box } from "@chakra-ui/react";
 
 const MapPreview = ({ route = [] }) => (
-  <MapContainer center={route[0] || [10.7769, 106.7009]} zoom={13} style={{ height: "100vh", width: "100%" }}>
-    <TileLayer
-      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-    />
-    {route.length > 0 && (
-      <>
-        <Polyline positions={route} color="blue" />
-        {route.map((pos, idx) => (
-          <Marker key={idx} position={pos}>
-            <Popup>Điểm {idx + 1}</Popup>
-          </Marker>
-        ))}
-      </>
-    )}
-  </MapContainer>
+  <Box w="100%" h="100%">
+    <MapContainer center={route[0] || [10.7769, 106.7009]} zoom={10} style={{ height: "100%", width: "100%" }}>
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="&copy; OpenStreetMap contributors"
+      />
+      {route.length > 0 && (
+        <>
+          <Polyline positions={route} color="blue" />
+          {route.map((pos, idx) => (
+            <Marker key={idx} position={pos}>
+              <Popup>Điểm {idx + 1}</Popup>
+            </Marker>
+          ))}
+        </>
+      )}
+    </MapContainer>
+  </Box>
 );
 
 const getRoute = async (start, end) => {

@@ -8,7 +8,7 @@ import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import SplitPane from 'react-split-pane'
+import Split from 'react-split'
 import MapPreview from '../components/MapPreview'
 
 const Sidebar = () => {
@@ -96,20 +96,24 @@ const Chat = () => {
   };
 
   return (
-    <SplitPane split="vertical" minSize={300} defaultSize="75%">
-      <Box>
-        <Flex h="100vh">
-          <Sidebar />
-
-          {/* Chat Content */}
-          <Flex direction="column" flex={1} p={6} bg="white">
-            {/* Header */}
+    <Flex h="100vh">
+      <Sidebar />
+      <Box flex="1" h="100vh">
+        <Split
+          className="split"
+          sizes={[60, 40]}
+          minSize={200}
+          gutterSize={8}
+          direction="horizontal"
+          style={{ display: 'flex', height: '100%' }}
+        >
+          <Box p={4} h="100%" overflow="auto">
+            {/* Chat content here */}
             <VStack align="start" spacing={2}>
               <Text fontSize="2xl" fontWeight="bold">Where will you go today?</Text>
               <Text color="gray.500">You can ask me anything about travel.</Text>
             </VStack>
 
-            {/* Messages */}
             <Box flex={1} my={6} overflowY="auto">
               <VStack spacing={4} align="stretch">
                 {messages.map((msg, idx) => (
@@ -151,7 +155,6 @@ const Chat = () => {
               </VStack>
             </Box>
 
-            {/* Input */}
             <InputGroup>
               <Input
                 placeholder="Ask anything..."
@@ -171,13 +174,13 @@ const Chat = () => {
                 />
               </InputRightElement>
             </InputGroup>
-          </Flex>
-        </Flex>
+          </Box>
+          <Box h="100%" overflow="auto">
+            <MapPreview />
+          </Box>
+        </Split>
       </Box>
-      <Box>
-        <MapPreview route={[[10.7769, 106.7009], [11.9404, 108.4583]]} />
-      </Box>
-    </SplitPane>
+    </Flex>
   )
 }
 
