@@ -5,6 +5,11 @@ import { ChatIcon, SearchIcon, SettingsIcon } from '@chakra-ui/icons'
 import { FaPaperPlane } from 'react-icons/fa'
 import { Link, useLocation } from 'react-router-dom'
 import axios from 'axios'
+import ReactMarkdown from 'react-markdown'
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import SplitPane from 'react-split-pane'
+import MapPreview from '../components/MapPreview'
 
 const Sidebar = () => {
   const { pathname } = useLocation()
@@ -57,6 +62,7 @@ const Chat = () => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [route, setRoute] = useState([]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -74,6 +80,7 @@ const Chat = () => {
         ...msgs,
         { sender: 'bot', text: res.data.output || "No response from AI." }
       ]);
+      setRoute(res.data.route);
     } catch (err) {
       setMessages((msgs) => [
         ...msgs,
@@ -89,73 +96,88 @@ const Chat = () => {
   };
 
   return (
-    <Flex h="100vh">
-      <Sidebar />
+    <SplitPane split="vertical" minSize={300} defaultSize="75%">
+      <Box>
+        <Flex h="100vh">
+          <Sidebar />
 
-      {/* Chat Content */}
-      <Flex direction="column" flex={1} p={6} bg="white">
-        {/* Header */}
-        <VStack align="start" spacing={2}>
-          <Text fontSize="2xl" fontWeight="bold">Where will you go today?</Text>
-          <Text color="gray.500">You can ask me anything about travel.</Text>
-        </VStack>
+          {/* Chat Content */}
+          <Flex direction="column" flex={1} p={6} bg="white">
+            {/* Header */}
+            <VStack align="start" spacing={2}>
+              <Text fontSize="2xl" fontWeight="bold">Where will you go today?</Text>
+              <Text color="gray.500">You can ask me anything about travel.</Text>
+            </VStack>
 
-        {/* Messages */}
-        <Box flex={1} my={6} overflowY="auto">
-          <VStack spacing={4} align="stretch">
-            {messages.map((msg, idx) => (
-              <HStack
-                key={idx}
-                alignSelf={msg.sender === 'user' ? 'flex-end' : 'flex-start'}
-                bg={msg.sender === 'user' ? 'gray.50' : 'gray.100'}
-                p={3}
-                borderRadius="md"
-                maxW="60%"
-              >
-                <Text>{msg.text}</Text>
-              </HStack>
-            ))}
-            {loading && (
-              <HStack alignSelf="flex-start" bg="gray.100" p={3} borderRadius="md" maxW="60%">
-                <Text>...</Text>
-              </HStack>
-            )}
-          </VStack>
-        </Box>
+            {/* Messages */}
+            <Box flex={1} my={6} overflowY="auto">
+              <VStack spacing={4} align="stretch">
+                {messages.map((msg, idx) => (
+                  <HStack
+                    key={idx}
+                    alignSelf={msg.sender === 'user' ? 'flex-end' : 'flex-start'}
+                    bg={msg.sender === 'user' ? 'gray.50' : 'teal.50'}
+                    p={3}
+                    borderRadius="md"
+                    maxW="80%"
+                    w="fit-content"
+                  >
+                    {msg.sender === 'bot' ? (
+                      <Box
+                        border="1px solid"
+                        borderColor="teal.200"
+                        borderRadius="md"
+                        p={1}
+                        sx={{
+                          'h1, h2, h3, h4, h5, h6': { color: 'teal.700', marginTop: 2, marginBottom: 2 },
+                          'ul, ol': { pl: 4, mb: 2 },
+                          'li': { mb: 1 },
+                          'strong': { color: 'teal.800' },
+                          'code': { background: '#f4f4f4', px: 1, borderRadius: 2 }
+                        }}
+                      >
+                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      </Box>
+                    ) : (
+                      <Text>{msg.text}</Text>
+                    )}
+                  </HStack>
+                ))}
+                {loading && (
+                  <HStack alignSelf="flex-start" bg="gray.100" p={3} borderRadius="md" maxW="60%">
+                    <Text>...</Text>
+                  </HStack>
+                )}
+              </VStack>
+            </Box>
 
-        {/* Input */}
-        <InputGroup>
-          <Input
-            placeholder="Ask anything..."
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            isDisabled={loading}
-          />
-          <InputRightElement>
-            <IconButton
-              size="sm"
-              aria-label="send"
-              icon={<FaPaperPlane />}
-              variant="ghost"
-              onClick={sendMessage}
-              isLoading={loading}
-            />
-          </InputRightElement>
-        </InputGroup>
-      </Flex>
-
-      {/* Preview / Map */}
-      <Box w="300px" h="100vh" bg="gray.50">
-        <Image
-          src="https://via.placeholder.com/300x800?text=Map+Preview"
-          alt="map preview"
-          objectFit="cover"
-          w="100%"
-          h="100%"
-        />
+            {/* Input */}
+            <InputGroup>
+              <Input
+                placeholder="Ask anything..."
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                isDisabled={loading}
+              />
+              <InputRightElement>
+                <IconButton
+                  size="sm"
+                  aria-label="send"
+                  icon={<FaPaperPlane />}
+                  variant="ghost"
+                  onClick={sendMessage}
+                  isLoading={loading}
+                />
+              </InputRightElement>
+            </InputGroup>
+          </Flex>
+        </Flex>
       </Box>
-    </Flex>
+      <Box>
+        <MapPreview route={[[10.7769, 106.7009], [11.9404, 108.4583]]} />
+      </Box>
+    </SplitPane>
   )
 }
 

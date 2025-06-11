@@ -22,7 +22,9 @@ if __name__ == "__main__":
     
     # Check if API keys are configured
     openai_key = os.getenv("OPENAI_API_KEY")
+    print(openai_key)
     gemini_key = os.getenv("GEMINI_API_KEY")
+    print(gemini_key)
     
     print("\n🔑 API Keys Status:")
     print(f"  OpenAI: {'✅ Configured' if openai_key else '❌ Not configured'}")
