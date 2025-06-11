@@ -1,9 +1,9 @@
 // ChatPage.jsx
 import React, { useState } from 'react'
-import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image } from '@chakra-ui/react'
-import { ChatIcon, SearchIcon, SettingsIcon } from '@chakra-ui/icons'
+import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image, Menu, MenuButton, MenuList, MenuItem, Icon, Button } from '@chakra-ui/react'
+import { ChatIcon, SearchIcon, SettingsIcon, ChevronUpIcon  } from '@chakra-ui/icons'
 import { FaPaperPlane } from 'react-icons/fa'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate  } from 'react-router-dom'
 import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
@@ -13,6 +13,7 @@ import MapPreview from '../components/MapPreview'
 
 const Sidebar = () => {
   const { pathname } = useLocation()
+  const navigate = useNavigate();
   return (
     <Flex
       direction="column"
@@ -21,40 +22,59 @@ const Sidebar = () => {
       borderRight="1px solid"
       borderColor="gray.200"
       h="100vh"
-      justify="space-between"
       p={4}
     >
       {/* Logo */}
       <VStack spacing={1} align="center">
-        <Image src="/logo.png" boxSize="60px" />
-        <Text fontWeight="bold">VIVUBOT</Text>
-        <Text fontSize="sm" color="gray.500">TRAVEL ASSISTANT</Text>
+        <Image src="/logo.png" boxSize="200px" objectFit="contain"/>
       </VStack>
 
       {/* Nav */}
-      <VStack spacing={6} align="stretch" mt={8}>
-        <Link to="/chat">
-          <HStack color={pathname === '/chat' ? 'teal.500' : 'gray.600'}>
-            <ChatIcon />
-            <Text>Chat</Text>
-          </HStack>
-        </Link>
-        <Link to="/explore">
-          <HStack color={pathname === '/explore' ? 'teal.500' : 'gray.600'}>
-            <SearchIcon />
-            <Text>Explore</Text>
-          </HStack>
-        </Link>
-      </VStack>
+      <Box mt={12}>
+        <VStack spacing={8} align="stretch">
+          <Link to="/chat">
+            <HStack
+              color={pathname === '/chat' ? 'teal.500' : 'gray.600'}
+              fontSize="lg"
+              spacing={4}
+              pl={6} // 👈 đẩy cụm này ra giữa hơn một chút, vẫn align trái
+            >
+              <ChatIcon boxSize={5} />
+              <Text>Chat</Text>
+            </HStack>
+          </Link>
+          <Link to="/explore">
+            <HStack
+              color={pathname === '/explore' ? 'teal.500' : 'gray.600'}
+              fontSize="lg"
+              spacing={4}
+              pl={6} // 👈 cùng độ lệch cho đều nhau
+            >
+              <SearchIcon boxSize={5} />
+              <Text>Explore</Text>
+            </HStack>
+          </Link>
+        </VStack>
+      </Box>
 
-      {/* User */}
-      <HStack spacing={2}>
-        <SettingsIcon />
-        <Text>Username</Text>
-      </HStack>
+      {/* Spacer đẩy phần dropdown xuống dưới cùng */}
+      <Box flex={1} />
+
+      {/* User Dropdown */}
+      <Menu placement="top-start">
+        <MenuButton as={Button} variant="ghost" px={2} py={1} rightIcon={<ChevronUpIcon />}>
+          <HStack spacing={2}>
+            <SettingsIcon />
+            <Text>Username</Text>
+          </HStack>
+        </MenuButton>
+        <MenuList>
+          <MenuItem onClick={() => navigate('/')}>Logout</MenuItem>
+        </MenuList>
+      </Menu>
     </Flex>
-  )
-}
+  );
+};
 
 const Chat = () => {
   const [messages, setMessages] = useState([
