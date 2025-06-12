@@ -7,7 +7,7 @@ import Navbar from '../components/Navbar';
 const HomePage = () => {
   const navigate = useNavigate(); // khởi tạo hàm điều hướng
 
-  const placeholderImage = 'https://png.pngtree.com/png-clipart/20240905/original/pngtree-stack-of-plain-pancakes-png-image_15935323.png';
+  const placeholderImage = 'background.png';
 
   const styles = {
     container: {
@@ -26,24 +26,14 @@ const HomePage = () => {
       flex: 1,
       display: 'flex',
       flexDirection: 'column',
-      background: 'linear-gradient(90deg, #C4C4C4 30%, #003D5B 100%)',
+      background: 'linear-gradient(90deg, #004E5A 0%, #001A1F 100%)',
       color: '#fff',
       position: 'relative',
-    },
-    logo: {
-      fontSize: '32px',
-      marginRight: '8px',
     },
     brandName: {
       fontSize: '24px',
       fontWeight: 'bold',
       marginRight: '16px',
-    },
-    slogan: {
-      fontSize: '40px',
-      fontWeight: 'bold',
-      marginLeft: 'auto',
-      marginRight: '20px',
     },
     mainContent: {
       flex: 1,
@@ -55,14 +45,31 @@ const HomePage = () => {
     },
     navbar: {
       display: 'flex',
+      flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
       padding: '20px',
-      backgroundColor: 'rgba(0, 61, 91, 0.8)',
+      backgroundColor: 'rgba(217, 217, 217, 0.6)',
+    },
+    logo: {
+      flexShrink: 0, // giữ nguyên logo, không co lại
+    },
+    sloganContainer: {
+      flex: 1,
+      display: 'flex',
+      justifyContent: 'center', // căn giữa ngang
+      alignItems: 'center',     // căn giữa dọc
+    },
+    
+    slogan: {
+      fontSize: '32px',
+      fontWeight: 'bold',
+      color: 'black',
     },
     buttonPrimary: {
       width: '480px',
       padding: '15px 0',
-      backgroundColor: '#2AB7CA',
+      backgroundColor: 'teal',
       color: '#fff',
       border: 'none',
       borderRadius: '8px',
@@ -87,9 +94,12 @@ const HomePage = () => {
       <div style={styles.right}>
         {/* Navbar */}
         <div style={styles.navbar}>
-          <div style={styles.logo}>🤖</div>
-          <div style={styles.brandName}>VIVUBOT</div>
-          <div style={styles.slogan}>AI Assistant for Vietnam Traveling</div>
+          <div style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => navigate('/')}>
+            <img src="/logo.png" alt="Logo" style={{ width: '150px' }} />
+          </div>
+          <div style={{ ...styles.sloganContainer, cursor: 'pointer' }} onClick={() => navigate('/')}>
+            <div style={styles.slogan}>AI Assistant for Vietnam Traveling</div>
+          </div>
         </div>
 
         {/* Main Content */}

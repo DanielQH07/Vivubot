@@ -1,18 +1,21 @@
 // ChatPage.jsx
+
+import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image, Menu, MenuButton, MenuList, MenuItem, Icon, Button } from '@chakra-ui/react'
+import { ChatIcon, SearchIcon, SettingsIcon  } from '@chakra-ui/icons'
 import React, { useState, useEffect } from 'react'
-import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image } from '@chakra-ui/react'
-import { ChatIcon, SearchIcon, SettingsIcon } from '@chakra-ui/icons'
+
 import { FaPaperPlane } from 'react-icons/fa'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate  } from 'react-router-dom'
 import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import Split from 'react-split'
+import SplitPane from 'react-split-pane'
 import MapPreview from '../components/MapPreview'
 
 const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }) => {
   const { pathname } = useLocation()
+  const navigate = useNavigate();
   return (
     <Flex
       direction="column"
@@ -21,7 +24,6 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
       borderRight="1px solid"
       borderColor="gray.200"
       h="100vh"
-      justify="space-between"
       p={4}
     >
       {/* Logo */}
@@ -77,10 +79,21 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
       </VStack>
 
       {/* User */}
-      <HStack spacing={2} mt={4}>
-        <SettingsIcon />
-        <Text>username</Text>
-      </HStack>
+      <Menu>
+        <MenuButton as={Button} leftIcon={<SettingsIcon />} size="sm" colorScheme="gray">
+          username
+        </MenuButton>
+        <MenuList>
+          <MenuItem onClick={() => {
+            localStorage.removeItem('vivubot_session_id');
+            localStorage.removeItem('token'); // nếu có
+            window.location.href = '/login'; // hoặc dùng navigate('/login');
+          }}>
+            Logout
+          </MenuItem>
+        </MenuList>
+      </Menu>
+
     </Flex>
   )
 }
@@ -145,8 +158,7 @@ const Chat = ({ user }) => {
   const sendMessage = async () => {
     if (!input.trim()) return;
     const userMessage = { sender: 'user', text: input };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    setMessages((msgs) => [...msgs, userMessage]);
     setInput('');
     setLoading(true);
     await saveMessage('user', input);
@@ -163,8 +175,7 @@ const Chat = ({ user }) => {
     try {
       const res = await axios.post('http://localhost:8000/generate-itinerary', {
         text: input,
-        ai_provider: "gpt",
-        history: buildHistory(newMessages.slice(0, -1)) // chỉ lấy history trước message hiện tại
+        ai_provider: "gpt" // or "gemini"
       });
       setMessages((msgs) => {
         const updated = [...msgs, { sender: 'bot', text: res.data.output || "No response from AI." }];
@@ -203,97 +214,91 @@ const Chat = ({ user }) => {
   };
 
   return (
-    <Flex h="100vh">
+    <SplitPane split="vertical" minSize={220} defaultSize={220}>
       <Sidebar
         sessions={sessions}
         onNewChat={handleNewChat}
         onSelectSession={handleSelectSession}
         currentSessionId={sessionId}
       />
-      <Box flex="1" h="100vh">
-        <Split
-          className="split"
-          sizes={[60, 40]}
-          minSize={200}
-          gutterSize={8}
-          direction="horizontal"
-          style={{ display: 'flex', height: '100%' }}
-        >
-          <Box p={4} h="100%" overflow="auto">
-            {/* Chat content here */}
-            <VStack align="start" spacing={2}>
-              <Text fontSize="2xl" fontWeight="bold">Where will you go today?</Text>
-              <Text color="gray.500">You can ask me anything about travel.</Text>
+      <SplitPane split="vertical" minSize={300} defaultSize="60%">
+        <Box p={4} h="100vh" overflow="auto">
+          {/* Chat content here */}
+          <VStack align="start" spacing={2}>
+            <Text fontSize="2xl" fontWeight="bold">Where will you go today?</Text>
+            <Text color="gray.500">You can ask me anything about travel.</Text>
+          </VStack>
+  
+          {/* Messages */}
+          <Box flex={1} my={6} overflowY="auto">
+            <VStack spacing={4} align="stretch">
+              {messages.map((msg, idx) => (
+                <HStack
+                  key={idx}
+                  alignSelf={msg.sender === 'user' ? 'flex-end' : 'flex-start'}
+                  bg={msg.sender === 'user' ? 'gray.50' : 'teal.50'}
+                  p={3}
+                  borderRadius="md"
+                  maxW="80%"
+                  w="fit-content"
+                >
+                  {msg.sender === 'bot' ? (
+                    <Box
+                      border="1px solid"
+                      borderColor="teal.200"
+                      borderRadius="md"
+                      p={1}
+                      sx={{
+                        'h1, h2, h3, h4, h5, h6': { color: 'teal.700', marginTop: 2, marginBottom: 2 },
+                        'ul, ol': { pl: 4, mb: 2 },
+                        'li': { mb: 1 },
+                        'strong': { color: 'teal.800' },
+                        'code': { background: '#f4f4f4', px: 1, borderRadius: 2 }
+                      }}
+                    >
+                      <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    </Box>
+                  ) : (
+                    <Text>{msg.text}</Text>
+                  )}
+                </HStack>
+              ))}
+              {loading && (
+                <HStack alignSelf="flex-start" bg="gray.100" p={3} borderRadius="md" maxW="60%">
+                  <Text>...</Text>
+                </HStack>
+              )}
             </VStack>
-
-            <Box flex={1} my={6} overflowY="auto">
-              <VStack spacing={4} align="stretch">
-                {messages.map((msg, idx) => (
-                  <HStack
-                    key={idx}
-                    alignSelf={msg.sender === 'user' ? 'flex-end' : 'flex-start'}
-                    bg={msg.sender === 'user' ? 'gray.50' : 'teal.50'}
-                    p={3}
-                    borderRadius="md"
-                    maxW="80%"
-                    w="fit-content"
-                  >
-                    {msg.sender === 'bot' ? (
-                      <Box
-                        border="1px solid"
-                        borderColor="teal.200"
-                        borderRadius="md"
-                        p={1}
-                        sx={{
-                          'h1, h2, h3, h4, h5, h6': { color: 'teal.700', marginTop: 2, marginBottom: 2 },
-                          'ul, ol': { pl: 4, mb: 2 },
-                          'li': { mb: 1 },
-                          'strong': { color: 'teal.800' },
-                          'code': { background: '#f4f4f4', px: 1, borderRadius: 2 }
-                        }}
-                      >
-                        <ReactMarkdown>{msg.text}</ReactMarkdown>
-                      </Box>
-                    ) : (
-                      <Text>{msg.text}</Text>
-                    )}
-                  </HStack>
-                ))}
-                {loading && (
-                  <HStack alignSelf="flex-start" bg="gray.100" p={3} borderRadius="md" maxW="60%">
-                    <Text>...</Text>
-                  </HStack>
-                )}
-              </VStack>
-            </Box>
-
-            <InputGroup>
-              <Input
-                placeholder="Ask anything..."
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                isDisabled={loading}
+          </Box>
+  
+          {/* Input */}
+          <InputGroup>
+            <Input
+              placeholder="Ask anything..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              isDisabled={loading}
+            />
+            <InputRightElement>
+              <IconButton
+                size="sm"
+                aria-label="send"
+                icon={<FaPaperPlane />}
+                variant="ghost"
+                onClick={sendMessage}
+                isLoading={loading}
               />
-              <InputRightElement>
-                <IconButton
-                  size="sm"
-                  aria-label="send"
-                  icon={<FaPaperPlane />}
-                  variant="ghost"
-                  onClick={sendMessage}
-                  isLoading={loading}
-                />
-              </InputRightElement>
-            </InputGroup>
-          </Box>
-          <Box h="100%" overflow="auto">
-            <MapPreview />
-          </Box>
-        </Split>
-      </Box>
-    </Flex>
-  )
+            </InputRightElement>
+          </InputGroup>
+        </Box>
+  
+        <Box h="100vh" overflow="auto">
+          <MapPreview />
+        </Box>
+      </SplitPane>
+    </SplitPane>
+  );  
 }
 
 export default Chat

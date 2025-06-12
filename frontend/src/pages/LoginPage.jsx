@@ -11,28 +11,55 @@ const LoginPage = ({ onLogin }) => {
   const toast    = useToast();
   const navigate = useNavigate();
 
-  // giữ nguyên styles của HomePage cho navbar
   const styles = {
+    container: {
+      display: 'flex',
+      width: '100vw',
+      height: '100vh',
+      fontFamily: 'Segoe UI, Roboto, sans-serif',
+    },
+    left: {
+      flex: 1,
+      backgroundImage: `url('background.png')`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    },
+    right: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'linear-gradient(90deg, #004E5A 0%, #001A1F 100%)',
+      color: '#fff',
+      position: 'relative',
+    },
     navbar: {
       display: 'flex',
+      flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
       padding: '20px',
-      backgroundColor: 'rgba(0, 61, 91, 0.8)',
+      backgroundColor: 'rgba(217, 217, 217, 0.6)',
     },
     logo: {
-      fontSize: '32px',
-      marginRight: '8px',
+      flexShrink: 0,
     },
-    brandName: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      marginRight: '16px',
+    sloganContainer: {
+      flex: 1,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     slogan: {
-      fontSize: '40px',
+      fontSize: '32px',
       fontWeight: 'bold',
-      marginLeft: 'auto',
-      marginRight: '20px',
+      color: 'black',
+    },
+    mainContent: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      padding: '0 50px',
     },
   };
 
@@ -58,53 +85,55 @@ const LoginPage = ({ onLogin }) => {
   };
 
   return (
-    <Flex w="100vw" h="100vh">
-      {/* phần hình bên trái */}
-      <Box flex={1}
-        bgImage="url('https://png.pngtree.com/png-clipart/20240905/original/pngtree-stack-of-plain-pancakes-png-image_15935323.png')"
-        bgSize="cover"
-      />
+    <div style={styles.container}>
+      <div style={styles.left} />
 
-      {/* phần form bên phải */}
-      <Flex flex={1} direction="column" bgGradient="linear(to-r, #003D5B, #002A3A)" color="white">
+      <div style={styles.right}>
+        {/* Navbar giống HomePage */}
+        <div style={styles.navbar}>
+          <div style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => navigate('/')}>
+            <img src="/logo.png" alt="Logo" style={{ width: '150px' }} />
+          </div>
+          <div style={{ ...styles.sloganContainer, cursor: 'pointer' }} onClick={() => navigate('/')}>
+            <div style={styles.slogan}>AI Assistant for Vietnam Traveling</div>
+          </div>
+        </div>
 
-        {/* Navbar y hệt HomePage */}
-        <Box style={styles.navbar}>
-          <Box style={styles.logo}>🤖</Box>
-          <Box style={styles.brandName}>VIVUBOT</Box>
-          <Box style={styles.slogan}>AI Assistant for Vietnam Traveling</Box>
-        </Box>
-
+        {/* Form Login */}
+        <div style={styles.mainContent}>
         <Box flex={1} p={10}>
           <Heading mb={10}>Login</Heading>
-          <VStack spacing={4} align="stretch">
-            <Input
-              placeholder="Email"
-              type="email"
-              bg="white" color="black"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-            <Input
-              placeholder="Password"
-              type="password"
-              bg="white" color="black"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
-            <Button colorScheme="teal" isLoading={loading} onClick={handleSubmit}>
-              Login
-            </Button>
-            <Text>
-              Chưa có tài khoản?{' '}
-              <Text as="span" color="teal.200" cursor="pointer" onClick={() => navigate('/signup')}>
-                Sign up
+          <form onSubmit={e => { e.preventDefault(); handleSubmit(); }}>
+            <VStack spacing={4} align="stretch">
+              <Input
+                placeholder="Email"
+                type="email"
+                bg="white" color="black"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+              <Input
+                placeholder="Password"
+                type="password"
+                bg="white" color="black"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+              <Button colorScheme="teal" isLoading={loading} type="submit">
+                Login
+              </Button>
+              <Text>
+                Chưa có tài khoản?{' '}
+                <Text as="span" color="teal.200" cursor="pointer" onClick={() => navigate('/signup')}>
+                  Sign up
+                </Text>
               </Text>
-            </Text>
-          </VStack>
+            </VStack>
+          </form>
         </Box>
-      </Flex>
-    </Flex>
+        </div>
+      </div>
+    </div>
   );
 };
 
