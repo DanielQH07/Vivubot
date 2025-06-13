@@ -1,9 +1,7 @@
 // ChatPage.jsx
-
-import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image, Menu, MenuButton, MenuList, MenuItem, Icon, Button } from '@chakra-ui/react'
-import { ChatIcon, SearchIcon, SettingsIcon  } from '@chakra-ui/icons'
 import React, { useState, useEffect } from 'react'
-
+import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image, Menu, MenuButton, MenuList, MenuItem, Icon, Button, Divider, Spacer } from '@chakra-ui/react'
+import { ChatIcon, SearchIcon, SettingsIcon, ChevronUpIcon  } from '@chakra-ui/icons'
 import { FaPaperPlane } from 'react-icons/fa'
 import { Link, useLocation, useNavigate  } from 'react-router-dom'
 import axios from 'axios'
@@ -16,6 +14,8 @@ import MapPreview from '../components/MapPreview'
 const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }) => {
   const { pathname } = useLocation()
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user'));
+  const username = user?.username || "Username";
   return (
     <Flex
       direction="column"
@@ -62,41 +62,105 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
         ))}
       </VStack>
 
-      {/* Nav */}
-      <VStack spacing={6} align="stretch" mt={8}>
-        <Link to="/chat">
-          <HStack color={pathname === '/chat' ? 'teal.500' : 'gray.600'}>
-            <ChatIcon />
-            <Text>Chat</Text>
-          </HStack>
-        </Link>
-        <Link to="/explore">
-          <HStack color={pathname === '/explore' ? 'teal.500' : 'gray.600'}>
-            <SearchIcon />
-            <Text>Explore</Text>
-          </HStack>
-        </Link>
-      </VStack>
+      {/* Sticky Nav (Chat / Explore) */}
+      <Box
+        position="sticky"
+        top="0"
+        bg="gray.50"
+        zIndex="1"
+        py={2}
+        borderBottom="1px solid"
+        borderColor="gray.200"
+      >
+        <VStack spacing={4} align="stretch">
+          <Link to="/chat">
+            <HStack
+              color={pathname === '/chat' ? 'teal.500' : 'gray.600'}
+              fontSize="lg"
+              spacing={4}
+              pl={4}
+              _hover={{ color: 'teal.600' }}
+            >
+              <ChatIcon boxSize={5} />
+              <Text>Chat</Text>
+            </HStack>
+          </Link>
+          <Link to="/explore">
+            <HStack
+              color={pathname === '/explore' ? 'teal.500' : 'gray.600'}
+              fontSize="lg"
+              spacing={4}
+              pl={4}
+              _hover={{ color: 'teal.600' }}
+            >
+              <SearchIcon boxSize={5} />
+              <Text>Explore</Text>
+            </HStack>
+          </Link>
+        </VStack>
+      </Box>
 
-      {/* User */}
-      <Menu>
-        <MenuButton as={Button} leftIcon={<SettingsIcon />} size="sm" colorScheme="gray">
-          username
+
+      {/* New Chat Button */}
+      <Box mt={4} mb={2}>
+        <IconButton colorScheme="teal" size="sm" onClick={onNewChat} icon={<ChatIcon />} aria-label="New Chat" w="full">
+          New Chat
+        </IconButton>
+      </Box>
+
+      {/* Session List */}
+      <Box mt={4} overflowY="auto" flex={20}>
+        <VStack align="stretch" spacing={1} maxH="300px" overflowY="auto" mb={4}>
+          {sessions.map(s => (
+            <Box
+              key={s.sessionId}
+              p={2}
+              borderRadius="md"
+              bg={s.sessionId === currentSessionId ? 'teal.100' : 'gray.100'}
+              cursor="pointer"
+              onClick={() => onSelectSession(s.sessionId)}
+              _hover={{ bg: 'teal.50' }}
+            >
+              <Text fontSize="sm" noOfLines={1}>
+                {s.sessionId.slice(0, 8)}... ({s.messageCount} msg)
+              </Text>
+              <Text fontSize="xs" color="gray.500">
+                {new Date(s.createdAt).toLocaleString()}
+              </Text>
+            </Box>
+          ))}
+        </VStack>
+      </Box>
+
+      {/* Spacer đẩy phần dropdown xuống dưới cùng */}
+      <Box flex={1} />
+
+      {/* User Dropdown */}
+      <Menu placement="top-start">
+        <MenuButton as={Button} variant="ghost" px={2} py={1} rightIcon={<ChevronUpIcon />}>
+          <HStack spacing={2}>
+            <SettingsIcon />
+            <Text>{username}</Text>
+          </HStack>
         </MenuButton>
         <MenuList>
-          <MenuItem onClick={() => {
-            localStorage.removeItem('vivubot_session_id');
-            localStorage.removeItem('token'); // nếu có
-            window.location.href = '/login'; // hoặc dùng navigate('/login');
-          }}>
+
+          <MenuItem
+            onClick={() => {
+              localStorage.removeItem('vivubot_session_id');
+              localStorage.removeItem('token'); // Xóa thông tin người dùng
+              navigate('/');                   // Quay về trang home
+            }}
+          >
             Logout
           </MenuItem>
         </MenuList>
       </Menu>
 
     </Flex>
-  )
-}
+  );
+};
+
 
 const getSessionId = () => {
   let sessionId = localStorage.getItem('vivubot_session_id');
@@ -121,7 +185,7 @@ const Chat = ({ user }) => {
   useEffect(() => {
     axios.get(`http://localhost:5000/api/chat/history/${sessionId}`)
       .then(res => {
-        if (res.data.messages && res.data.messages.length > 0) {
+        if (res.data.messages?.length > 0) {
           setMessages(res.data.messages.map(m => ({ sender: m.sender, text: m.message })));
         } else {
           setMessages([{ sender: 'bot', text: "Hi, I'm vivu!" }]);
@@ -150,9 +214,48 @@ const Chat = ({ user }) => {
         sessionId,
         sender,
         message,
-        userId: user && user.id ? user.id : undefined
+        userId: user?.id
       });
     } catch (err) {}
+  };
+
+  // Function to process itinerary text and extract coordinates
+  const processItineraryToRoute = (itineraryText) => {
+    try {
+      // Log the raw AI response for debugging
+      console.log('Raw AI response:', itineraryText);
+      // Tìm phần JSON trong text
+      const jsonMatch = itineraryText.match(/```json\n([\s\S]*?)\n```/);
+      if (!jsonMatch) {
+        console.log("No JSON found in response");
+        return { day1: [], day2: [], day3: [] };
+      }
+
+      // Parse JSON
+      const jsonStr = jsonMatch[1];
+      const data = JSON.parse(jsonStr);
+      
+      if (!data.route || typeof data.route !== 'object') {
+        console.log("Invalid JSON format - missing route object");
+        return { day1: [], day2: [], day3: [] };
+      }
+
+      // Ensure all days are present and are arrays
+      const route = {};
+      for (let i = 1; i <= 3; i++) {
+        const key = `day${i}`;
+        route[key] = Array.isArray(data.route[key]) ? data.route[key] : [];
+      }
+      return route;
+    } catch (error) {
+      console.error("Error processing itinerary:", error);
+      return { day1: [], day2: [], day3: [] };
+    }
+  };
+
+  // Function to clean response text by removing JSON
+  const cleanResponseText = (text) => {
+    return text.replace(/```json\n[\s\S]*?\n```/g, '').trim();
   };
 
   const sendMessage = async () => {
@@ -163,26 +266,25 @@ const Chat = ({ user }) => {
     setLoading(true);
     await saveMessage('user', input);
 
-    // Tạo history từ các messages trước đó (bỏ message bot chào hỏi nếu cần)
-    const buildHistory = (msgs) =>
-      msgs
-        .filter(m => m.sender === 'user' || m.sender === 'bot')
-        .map(m => ({
-          role: m.sender === 'user' ? 'user' : 'assistant',
-          content: m.text
-        }));
-
     try {
       const res = await axios.post('http://localhost:8000/generate-itinerary', {
         text: input,
         ai_provider: "gpt" // or "gemini"
       });
+      
+      // Process the response to extract route data
+      const routeData = processItineraryToRoute(res.data.output);
+      console.log('Parsed routeData:', routeData);
+      setRoute(routeData);
+      
+      // Clean the response text by removing JSON
+      const cleanText = cleanResponseText(res.data.output);
+      
       setMessages((msgs) => {
-        const updated = [...msgs, { sender: 'bot', text: res.data.output || "No response from AI." }];
-        saveMessage('bot', res.data.output || "No response from AI.");
+        const updated = [...msgs, { sender: 'bot', text: cleanText || "No response from AI." }];
+        saveMessage('bot', cleanText || "No response from AI.");
         return updated;
       });
-      setRoute(res.data.route);
     } catch (err) {
       setMessages((msgs) => {
         const updated = [...msgs, { sender: 'bot', text: "Sorry, I couldn't get a response from the AI." }];
@@ -214,91 +316,104 @@ const Chat = ({ user }) => {
   };
 
   return (
-    <SplitPane split="vertical" minSize={220} defaultSize={220}>
+    <Flex h="100vh">
+      {/* Sidebar */}
       <Sidebar
         sessions={sessions}
         onNewChat={handleNewChat}
         onSelectSession={handleSelectSession}
         currentSessionId={sessionId}
       />
-      <SplitPane split="vertical" minSize={300} defaultSize="60%">
-        <Box p={4} h="100vh" overflow="auto">
-          {/* Chat content here */}
-          <VStack align="start" spacing={2}>
-            <Text fontSize="2xl" fontWeight="bold">Where will you go today?</Text>
-            <Text color="gray.500">You can ask me anything about travel.</Text>
+  
+      {/* Chat area */}
+      <Flex direction="column" flex="2" p={6} bg="gray.50" overflow="hidden">
+        {/* Messages */}
+        <Box flex={1} my={6} overflowY="auto">
+          <VStack spacing={4} align="stretch">
+            {/* Header */}
+            <Box>
+              <Text fontSize="2xl" fontWeight="bold">Where will you go today?</Text>
+              <Text color="gray.500">You can ask me anything about travel.</Text>
+            </Box>
+  
+            {messages.map((msg, idx) => (
+              <HStack
+                key={idx}
+                alignSelf={msg.sender === 'user' ? 'flex-end' : 'flex-start'}
+                bg={msg.sender === 'user' ? 'gray.50' : 'teal.50'}
+                p={3}
+                borderRadius="md"
+                maxW="80%"
+                w="fit-content"
+              >
+                {msg.sender === 'bot' ? (
+                  <Box
+                    border="1px solid"
+                    borderColor="teal.200"
+                    borderRadius="md"
+                    p={1}
+                    sx={{
+                      'h1, h2, h3, h4, h5, h6': {
+                        color: 'teal.700',
+                        marginTop: 2,
+                        marginBottom: 2,
+                      },
+                      'ul, ol': { pl: 4, mb: 2 },
+                      li: { mb: 1 },
+                      strong: { color: 'teal.800' },
+                      code: { background: '#f4f4f4', px: 1, borderRadius: 2 },
+                    }}
+                  >
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  </Box>
+                ) : (
+                  <Text>{msg.text}</Text>
+                )}
+              </HStack>
+            ))}
+            {loading && (
+              <HStack
+                alignSelf="flex-start"
+                bg="gray.100"
+                p={3}
+                borderRadius="md"
+                maxW="60%"
+              >
+                <Text>...</Text>
+              </HStack>
+            )}
           </VStack>
+        </Box>
   
-          {/* Messages */}
-          <Box flex={1} my={6} overflowY="auto">
-            <VStack spacing={4} align="stretch">
-              {messages.map((msg, idx) => (
-                <HStack
-                  key={idx}
-                  alignSelf={msg.sender === 'user' ? 'flex-end' : 'flex-start'}
-                  bg={msg.sender === 'user' ? 'gray.50' : 'teal.50'}
-                  p={3}
-                  borderRadius="md"
-                  maxW="80%"
-                  w="fit-content"
-                >
-                  {msg.sender === 'bot' ? (
-                    <Box
-                      border="1px solid"
-                      borderColor="teal.200"
-                      borderRadius="md"
-                      p={1}
-                      sx={{
-                        'h1, h2, h3, h4, h5, h6': { color: 'teal.700', marginTop: 2, marginBottom: 2 },
-                        'ul, ol': { pl: 4, mb: 2 },
-                        'li': { mb: 1 },
-                        'strong': { color: 'teal.800' },
-                        'code': { background: '#f4f4f4', px: 1, borderRadius: 2 }
-                      }}
-                    >
-                      <ReactMarkdown>{msg.text}</ReactMarkdown>
-                    </Box>
-                  ) : (
-                    <Text>{msg.text}</Text>
-                  )}
-                </HStack>
-              ))}
-              {loading && (
-                <HStack alignSelf="flex-start" bg="gray.100" p={3} borderRadius="md" maxW="60%">
-                  <Text>...</Text>
-                </HStack>
-              )}
-            </VStack>
-          </Box>
-  
-          {/* Input */}
-          <InputGroup>
-            <Input
-              placeholder="Ask anything..."
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              isDisabled={loading}
+        {/* Input */}
+        <InputGroup>
+          <Input
+            placeholder="Ask anything..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            isDisabled={loading}
+          />
+          <InputRightElement>
+            <IconButton
+              size="sm"
+              aria-label="send"
+              icon={<FaPaperPlane />}
+              variant="ghost"
+              onClick={sendMessage}
+              isLoading={loading}
             />
-            <InputRightElement>
-              <IconButton
-                size="sm"
-                aria-label="send"
-                icon={<FaPaperPlane />}
-                variant="ghost"
-                onClick={sendMessage}
-                isLoading={loading}
-              />
-            </InputRightElement>
-          </InputGroup>
-        </Box>
+          </InputRightElement>
+        </InputGroup>
+      </Flex>
   
-        <Box h="100vh" overflow="auto">
-          <MapPreview />
-        </Box>
-      </SplitPane>
-    </SplitPane>
-  );  
-}
+      {/* Map Preview */}
+      <Box flex="1" h="100vh" overflowY="auto" borderLeft="1px solid" borderColor="gray.200">
+        <MapPreview route={route} />
+      </Box>
+    </Flex>
+  );
+}  
+
 
 export default Chat

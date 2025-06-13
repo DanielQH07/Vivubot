@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 import logging
 from app.graph import build_travel_graph
+from app.routes.route import router as route_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +27,8 @@ app.add_middleware(
 
 # Build the compiled graph
 compiled_graph = build_travel_graph()
+
+app.include_router(route_router)
 
 class TravelRequest(BaseModel):
     text: str

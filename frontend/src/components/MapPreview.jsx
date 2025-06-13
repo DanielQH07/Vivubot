@@ -1,37 +1,179 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { Box } from "@chakra-ui/react";
+import { Box, Text, VStack, HStack, Badge, Spinner, Alert, AlertIcon, Select } from "@chakra-ui/react";
+import L from 'leaflet';
+import { getRoute } from '../services/mapService';
 
-const MapPreview = ({ route = [] }) => (
-  <Box w="100%" h="100%">
-    <MapContainer center={route[0] || [10.7769, 106.7009]} zoom={10} style={{ height: "100%", width: "100%" }}>
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution="&copy; OpenStreetMap contributors"
-      />
-      {route.length > 0 && (
-        <>
-          <Polyline positions={route} color="blue" />
-          {route.map((pos, idx) => (
-            <Marker key={idx} position={pos}>
-              <Popup>Điểm {idx + 1}</Popup>
-            </Marker>
-          ))}
-        </>
+// Fix for default marker icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+const DAY_COLORS = {
+  day1: '#3182CE', // blue
+  day2: '#38A169', // green
+  day3: '#D69E2E', // yellow
+};
+
+const MapPreview = ({ route }) => {
+  const [actualRoute, setActualRoute] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [selectedDay, setSelectedDay] = useState('day1');
+
+  useEffect(() => {
+    const fetchRoute = async () => {
+      if (!route || !route[selectedDay]) {
+        console.log('No route data available for day:', selectedDay);
+        setActualRoute(null);
+        return;
+      }
+
+      console.log('Route data for day:', selectedDay, route[selectedDay]);
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Convert route locations to format expected by getRoute
+        const locations = route[selectedDay].map(loc => ({
+          lat: loc.latitude,
+          lng: loc.longitude
+        }));
+
+        console.log('Sending locations to API:', locations);
+        const routeData = await getRoute(locations);
+        console.log('Received route data from API:', routeData);
+        setActualRoute(routeData);
+      } catch (err) {
+        console.error('Error fetching route:', err);
+        setError('Failed to fetch route data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoute();
+  }, [route, selectedDay]);
+
+  // Debug render
+  console.log('Current state:', {
+    selectedDay,
+    hasRoute: !!route,
+    hasActualRoute: !!actualRoute,
+    routeData: route?.[selectedDay],
+    actualRouteData: actualRoute
+  });
+
+  if (!route) {
+    return (
+      <Box h="100%" display="flex" alignItems="center" justifyContent="center" bg="gray.50">
+        <Text color="gray.500">No route data available</Text>
+      </Box>
+    );
+  }
+
+  const currentRoute = route[selectedDay];
+  const mapCenter = currentRoute && currentRoute.length > 0 
+    ? [currentRoute[0].latitude, currentRoute[0].longitude]
+    : [10.762622, 106.660172]; // Default to HCMC
+
+  return (
+    <Box position="relative" h="100%">
+      {Object.keys(route).length > 1 && (
+        <Box
+          position="absolute"
+          top={4}
+          left={4}
+          zIndex={1000}
+          bg="white"
+          p={2}
+          borderRadius="lg"
+          boxShadow="lg"
+        >
+          <Select
+            value={selectedDay}
+            onChange={(e) => setSelectedDay(e.target.value)}
+            size="sm"
+          >
+            {Object.keys(route).map(day => (
+              <option key={day} value={day}>
+                {day === 'day1' ? 'Day 1' : day === 'day2' ? 'Day 2' : 'Day 3'}
+              </option>
+            ))}
+          </Select>
+        </Box>
       )}
-    </MapContainer>
-  </Box>
-);
 
-const getRoute = async (start, end) => {
-  const apiKey = "YOUR_API_KEY";
-  const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start[1]},${start[0]}&end=${end[1]},${end[0]}`;
-  const res = await fetch(url);
-  const data = await res.json();
-  // data.features[0].geometry.coordinates là mảng [lng, lat]
-  // Chuyển thành [lat, lng] cho leaflet
-  return data.features[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-}
+      {loading && (
+        <Box
+          position="absolute"
+          inset={0}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          bg="white"
+          bgOpacity={0.75}
+          zIndex={1000}
+        >
+          <Spinner size="xl" color="blue.500" />
+        </Box>
+      )}
+
+      {error && (
+        <Alert
+          status="error"
+          position="absolute"
+          top={4}
+          right={4}
+          zIndex={1000}
+        >
+          <AlertIcon />
+          {error}
+        </Alert>
+      )}
+
+      <MapContainer
+        center={mapCenter}
+        zoom={13}
+        style={{ height: '100%', width: '100%' }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+
+        {actualRoute && actualRoute.length > 0 && (
+          <Polyline
+            positions={actualRoute}
+            color={DAY_COLORS[selectedDay]}
+            weight={4}
+            opacity={0.7}
+          />
+        )}
+
+        {currentRoute?.map((location, index) => (
+          <Marker
+            key={index}
+            position={[location.latitude, location.longitude]}
+          >
+            <Popup>
+              <Box p={2}>
+                <Text fontWeight="bold">{location.name}</Text>
+                <Text fontSize="sm" color="gray.600">Time: {location.time}</Text>
+                {location.description && (
+                  <Text fontSize="sm" mt={1}>{location.description}</Text>
+                )}
+              </Box>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </Box>
+  );
+};
 
 export default MapPreview; 
