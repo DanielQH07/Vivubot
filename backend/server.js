@@ -4,11 +4,12 @@ import { connectDB } from './config/db.js';
 import iteratorRoutes from './routes/iterator.route.js';
 import authRoutes from './routes/auth.route.js';
 import chatRoutes from './routes/chat.route.js';
+import routeRoutes from './routes/route.route.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 // Kết nối Database
 connectDB();
@@ -32,6 +33,7 @@ app.use(express.json());
 app.use("/api/iterator", iteratorRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/route", routeRoutes);
 
 // Khởi động server
 app.listen(PORT, () => {

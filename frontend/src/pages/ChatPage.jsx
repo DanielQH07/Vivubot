@@ -142,9 +142,43 @@ const Chat = ({ user }) => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [route, setRoute] = useState([]);
+  const [route, setRoute] = useState(() => {
+    // Test route data
+    return {
+      day1: [
+        {"name": "Chùa Dơi", "latitude": 9.602521, "longitude": 105.968685, "time": "06:00"},
+        {"name": "Bến Ninh Kiều", "latitude": 10.034024, "longitude": 105.782779, "time": "14:00"}
+      ],
+      day2: [
+        {"name": "Khách sạn tại Cần Thơ", "latitude": 10.034024, "longitude": 105.782779, "time": "05:00"},
+        {"name": "Chợ nổi Cái Răng", "latitude": 10.015526, "longitude": 105.768924, "time": "06:00"},
+        {"name": "Chùa Vĩnh Tràng", "latitude": 10.360859, "longitude": 106.354061, "time": "14:00"}
+      ],
+      day3: [
+        {"name": "Khách sạn tại TP.HCM", "latitude": 10.762622, "longitude": 106.660172, "time": "08:00"},
+        {"name": "Dinh Độc Lập", "latitude": 10.776887, "longitude": 106.695554, "time": "08:30"},
+        {"name": "Chợ Bến Thành", "latitude": 10.772376, "longitude": 106.698390, "time": "13:30"}
+      ]
+    };
+  });
   const [sessionId, setSessionId] = useState(() => getSessionId());
   const [sessions, setSessions] = useState([]);
+
+  // Format message text to handle JSON and other special content
+  const formatMessageText = (text) => {
+    try {
+      // Try to parse as JSON
+      const parsed = JSON.parse(text);
+      // If it's an object, stringify it with proper formatting
+      if (typeof parsed === 'object') {
+        return JSON.stringify(parsed, null, 2);
+      }
+      return text;
+    } catch (e) {
+      // If it's not JSON, return as is
+      return text;
+    }
+  };
 
   // Lấy lịch sử chat khi load trang hoặc đổi sessionId
   useEffect(() => {
@@ -184,6 +218,25 @@ const Chat = ({ user }) => {
     } catch (err) {}
   };
 
+  // Parse route data from markdown text
+  const parseRouteFromText = (text) => {
+    try {
+      // Find JSON object in the text
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const jsonStr = jsonMatch[0];
+        const routeData = JSON.parse(jsonStr);
+        if (routeData.route) {
+          return routeData.route;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error parsing route:', error);
+      return null;
+    }
+  };
+
   const sendMessage = async () => {
     if (!input.trim()) return;
     const userMessage = { sender: 'user', text: input };
@@ -192,26 +245,29 @@ const Chat = ({ user }) => {
     setLoading(true);
     await saveMessage('user', input);
 
-    // Tạo history từ các messages trước đó (bỏ message bot chào hỏi nếu cần)
-    const buildHistory = (msgs) =>
-      msgs
-        .filter(m => m.sender === 'user' || m.sender === 'bot')
-        .map(m => ({
-          role: m.sender === 'user' ? 'user' : 'assistant',
-          content: m.text
-        }));
-
     try {
       const res = await axios.post('http://localhost:8000/generate-itinerary', {
         text: input,
         ai_provider: "gpt"
       });
+      console.log('API Response:', res.data);
+
+      // Parse route from the output text
+      const routeData = parseRouteFromText(res.data.output);
+      console.log('Parsed route data:', routeData);
+
       setMessages((msgs) => {
-        const updated = [...msgs, { sender: 'bot', text: res.data.output || "No response from AI." }];
-        saveMessage('bot', res.data.output || "No response from AI.");
+        const formattedText = formatMessageText(res.data.output || "No response from AI.");
+        const updated = [...msgs, { sender: 'bot', text: formattedText }];
+        saveMessage('bot', formattedText);
         return updated;
       });
-      setRoute(res.data.route || { day1: [], day2: [], day3: [] });
+
+      if (routeData) {
+        setRoute(routeData);
+      } else {
+        setRoute({ day1: [], day2: [], day3: [] });
+      }
     } catch (err) {
       setMessages((msgs) => {
         const updated = [...msgs, { sender: 'bot', text: "Sorry, I couldn't get a response from the AI." }];
@@ -233,7 +289,25 @@ const Chat = ({ user }) => {
     localStorage.setItem('vivubot_session_id', newSessionId);
     setSessionId(newSessionId);
     setMessages([{ sender: 'bot', text: "Hi, I'm vivu!" }]);
-    setRoute([]);
+    setRoute(() => {
+      // Test route data
+      return {
+        day1: [
+          {"name": "Chùa Dơi", "latitude": 9.602521, "longitude": 105.968685, "time": "06:00"},
+          {"name": "Bến Ninh Kiều", "latitude": 10.034024, "longitude": 105.782779, "time": "14:00"}
+        ],
+        day2: [
+          {"name": "Khách sạn tại Cần Thơ", "latitude": 10.034024, "longitude": 105.782779, "time": "05:00"},
+          {"name": "Chợ nổi Cái Răng", "latitude": 10.015526, "longitude": 105.768924, "time": "06:00"},
+          {"name": "Chùa Vĩnh Tràng", "latitude": 10.360859, "longitude": 106.354061, "time": "14:00"}
+        ],
+        day3: [
+          {"name": "Khách sạn tại TP.HCM", "latitude": 10.762622, "longitude": 106.660172, "time": "08:00"},
+          {"name": "Dinh Độc Lập", "latitude": 10.776887, "longitude": 106.695554, "time": "08:30"},
+          {"name": "Chợ Bến Thành", "latitude": 10.772376, "longitude": 106.698390, "time": "13:30"}
+        ]
+      };
+    });
   };
 
   // Chọn lại phiên chat cũ
