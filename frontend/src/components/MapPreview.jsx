@@ -27,13 +27,17 @@ const MapPreview = ({ route }) => {
 
   useEffect(() => {
     const fetchRoute = async () => {
-      if (!route || !route[selectedDay]) {
-        console.log('No route data available for day:', selectedDay);
+      // Chỉ gọi API khi có ít nhất 2 điểm
+      if (!route || !route[selectedDay] || route[selectedDay].length < 2) {
         setActualRoute(null);
+        if (route && route[selectedDay] && route[selectedDay].length < 2) {
+          setError('Không đủ điểm để vẽ tuyến đường.');
+        } else {
+          setError(null);
+        }
         return;
       }
 
-      console.log('Route data for day:', selectedDay, route[selectedDay]);
       setLoading(true);
       setError(null);
 
@@ -43,14 +47,11 @@ const MapPreview = ({ route }) => {
           lat: loc.latitude,
           lng: loc.longitude
         }));
-
-        console.log('Sending locations to API:', locations);
         const routeData = await getRoute(locations);
-        console.log('Received route data from API:', routeData);
         setActualRoute(routeData);
       } catch (err) {
-        console.error('Error fetching route:', err);
         setError('Failed to fetch route data. Please try again later.');
+        setActualRoute(null);
       } finally {
         setLoading(false);
       }
@@ -60,13 +61,13 @@ const MapPreview = ({ route }) => {
   }, [route, selectedDay]);
 
   // Debug render
-  console.log('Current state:', {
-    selectedDay,
-    hasRoute: !!route,
-    hasActualRoute: !!actualRoute,
-    routeData: route?.[selectedDay],
-    actualRouteData: actualRoute
-  });
+  // console.log('Current state:', {
+  //   selectedDay,
+  //   hasRoute: !!route,
+  //   hasActualRoute: !!actualRoute,
+  //   routeData: route?.[selectedDay],
+  //   actualRouteData: actualRoute
+  // });
 
   if (!route) {
     return (
@@ -115,8 +116,7 @@ const MapPreview = ({ route }) => {
           display="flex"
           alignItems="center"
           justifyContent="center"
-          bg="white"
-          bgOpacity={0.75}
+          bg="whiteAlpha.800"
           zIndex={1000}
         >
           <Spinner size="xl" color="blue.500" />
@@ -141,8 +141,8 @@ const MapPreview = ({ route }) => {
         zoom={13}
         style={{ height: '100%', width: '100%' }}
       >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
 
@@ -169,11 +169,11 @@ const MapPreview = ({ route }) => {
                 )}
               </Box>
             </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-    </Box>
-  );
+            </Marker>
+          ))}
+    </MapContainer>
+  </Box>
+);
 };
 
 export default MapPreview; 

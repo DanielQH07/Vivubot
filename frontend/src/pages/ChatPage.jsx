@@ -19,7 +19,7 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
   return (
     <Flex
       direction="column"
-      w="220px"
+      w="200px"
       bg="gray.50"
       borderRight="1px solid"
       borderColor="gray.200"
@@ -28,38 +28,7 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
     >
       {/* Logo */}
       <VStack spacing={1} align="center">
-        <Image src="/logo.svg" boxSize="60px" />
-        <Text fontWeight="bold">VIVUBOT</Text>
-        <Text fontSize="sm" color="gray.500">TRAVEL ASSISTANT</Text>
-      </VStack>
-
-      {/* New Chat Button */}
-      <Box mt={4} mb={2}>
-        <IconButton colorScheme="teal" size="sm" onClick={onNewChat} icon={<ChatIcon />} aria-label="New Chat" w="full">
-          New Chat
-        </IconButton>
-      </Box>
-
-      {/* Session List */}
-      <VStack align="stretch" spacing={1} maxH="300px" overflowY="auto" mb={4}>
-        {sessions.map(s => (
-          <Box
-            key={s.sessionId}
-            p={2}
-            borderRadius="md"
-            bg={s.sessionId === currentSessionId ? 'teal.100' : 'gray.100'}
-            cursor="pointer"
-            onClick={() => onSelectSession(s.sessionId)}
-            _hover={{ bg: 'teal.50' }}
-          >
-            <Text fontSize="sm" noOfLines={1}>
-              {s.sessionId.slice(0, 8)}... ({s.messageCount} msg)
-            </Text>
-            <Text fontSize="xs" color="gray.500">
-              {new Date(s.createdAt).toLocaleString()}
-            </Text>
-          </Box>
-        ))}
+        <Image src="/logo.png" boxSize="200px" objectFit="contain"/>
       </VStack>
 
       {/* Sticky Nav (Chat / Explore) */}
@@ -99,7 +68,6 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
           </Link>
         </VStack>
       </Box>
-
 
       {/* New Chat Button */}
       <Box mt={4} mb={2}>
@@ -144,7 +112,6 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
           </HStack>
         </MenuButton>
         <MenuList>
-
           <MenuItem
             onClick={() => {
               localStorage.removeItem('vivubot_session_id');
@@ -156,11 +123,9 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
           </MenuItem>
         </MenuList>
       </Menu>
-
     </Flex>
   );
 };
-
 
 const getSessionId = () => {
   let sessionId = localStorage.getItem('vivubot_session_id');
@@ -219,45 +184,6 @@ const Chat = ({ user }) => {
     } catch (err) {}
   };
 
-  // Function to process itinerary text and extract coordinates
-  const processItineraryToRoute = (itineraryText) => {
-    try {
-      // Log the raw AI response for debugging
-      console.log('Raw AI response:', itineraryText);
-      // Tìm phần JSON trong text
-      const jsonMatch = itineraryText.match(/```json\n([\s\S]*?)\n```/);
-      if (!jsonMatch) {
-        console.log("No JSON found in response");
-        return { day1: [], day2: [], day3: [] };
-      }
-
-      // Parse JSON
-      const jsonStr = jsonMatch[1];
-      const data = JSON.parse(jsonStr);
-      
-      if (!data.route || typeof data.route !== 'object') {
-        console.log("Invalid JSON format - missing route object");
-        return { day1: [], day2: [], day3: [] };
-      }
-
-      // Ensure all days are present and are arrays
-      const route = {};
-      for (let i = 1; i <= 3; i++) {
-        const key = `day${i}`;
-        route[key] = Array.isArray(data.route[key]) ? data.route[key] : [];
-      }
-      return route;
-    } catch (error) {
-      console.error("Error processing itinerary:", error);
-      return { day1: [], day2: [], day3: [] };
-    }
-  };
-
-  // Function to clean response text by removing JSON
-  const cleanResponseText = (text) => {
-    return text.replace(/```json\n[\s\S]*?\n```/g, '').trim();
-  };
-
   const sendMessage = async () => {
     if (!input.trim()) return;
     const userMessage = { sender: 'user', text: input };
@@ -266,25 +192,26 @@ const Chat = ({ user }) => {
     setLoading(true);
     await saveMessage('user', input);
 
+    // Tạo history từ các messages trước đó (bỏ message bot chào hỏi nếu cần)
+    const buildHistory = (msgs) =>
+      msgs
+        .filter(m => m.sender === 'user' || m.sender === 'bot')
+        .map(m => ({
+          role: m.sender === 'user' ? 'user' : 'assistant',
+          content: m.text
+        }));
+
     try {
       const res = await axios.post('http://localhost:8000/generate-itinerary', {
         text: input,
-        ai_provider: "gpt" // or "gemini"
+        ai_provider: "gpt"
       });
-      
-      // Process the response to extract route data
-      const routeData = processItineraryToRoute(res.data.output);
-      console.log('Parsed routeData:', routeData);
-      setRoute(routeData);
-      
-      // Clean the response text by removing JSON
-      const cleanText = cleanResponseText(res.data.output);
-      
       setMessages((msgs) => {
-        const updated = [...msgs, { sender: 'bot', text: cleanText || "No response from AI." }];
-        saveMessage('bot', cleanText || "No response from AI.");
+        const updated = [...msgs, { sender: 'bot', text: res.data.output || "No response from AI." }];
+        saveMessage('bot', res.data.output || "No response from AI.");
         return updated;
       });
+      setRoute(res.data.route || { day1: [], day2: [], day3: [] });
     } catch (err) {
       setMessages((msgs) => {
         const updated = [...msgs, { sender: 'bot', text: "Sorry, I couldn't get a response from the AI." }];
@@ -414,6 +341,5 @@ const Chat = ({ user }) => {
     </Flex>
   );
 }  
-
 
 export default Chat
