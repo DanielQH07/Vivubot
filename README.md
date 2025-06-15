@@ -54,6 +54,11 @@ npm install
 # Install frontend dependencies
 cd frontend
 npm install
+npm install —legacy-peer-deps react-split-pane
+
+# Settings
+cd ..
+npm install
 
 # Install language service dependencies
 cd langgraph-service
@@ -146,9 +151,15 @@ npm install
 # Cài đặt dependencies frontend
 cd frontend
 npm install
+npm install —legacy-peer-deps react-split-pane
+
+# Cài đặt
+cd ..
+npm install
+
 
 # Cài đặt dependencies dịch vụ ngôn ngữ
-cd ../langgraph-service
+cd langgraph-service
 pip install -r requirements.txt
 ```
 
