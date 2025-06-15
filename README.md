@@ -54,7 +54,7 @@ npm install
 # Install frontend dependencies
 cd frontend
 npm install
-npm install —legacy-peer-deps react-split-pane
+npm install --legacy-peer-deps react-split-pane
 
 # Settings
 cd ..
@@ -151,7 +151,7 @@ npm install
 # Cài đặt dependencies frontend
 cd frontend
 npm install
-npm install —legacy-peer-deps react-split-pane
+npm install --legacy-peer-deps react-split-pane
 
 # Cài đặt
 cd ..
