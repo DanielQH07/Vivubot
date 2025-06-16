@@ -259,8 +259,8 @@ const Chat = ({ user }) => {
       const res = await axios.post('http://localhost:8000/generate-itinerary', {
         text: input,
         ai_provider: "gpt"
-      });      console.log('API Response:', res.data);
-      console.log('Raw output text:', res.data.output);
+      });
+      console.log('API Response:', res.data);
 
       // Parse route from the output text
       const routeData = parseRouteFromText(res.data.output);
