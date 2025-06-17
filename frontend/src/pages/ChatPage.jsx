@@ -1,7 +1,7 @@
 // ChatPage.jsx
 import React, { useState, useEffect } from 'react'
 import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image, Menu, MenuButton, MenuList, MenuItem, Icon, Button, Divider, Spacer } from '@chakra-ui/react'
-import { ChatIcon, SearchIcon, SettingsIcon, ChevronUpIcon  } from '@chakra-ui/icons'
+import { ChatIcon, SearchIcon, SettingsIcon, ChevronUpIcon, DeleteIcon } from '@chakra-ui/icons'
 import { FaPaperPlane } from 'react-icons/fa'
 import { Link, useLocation, useNavigate  } from 'react-router-dom'
 import axios from 'axios'
@@ -16,10 +16,22 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
   const username = user?.username || "Username";
+
+  // Add delete session handler
+  const handleDeleteSession = async (sessionId, e) => {
+    e.stopPropagation(); // Prevent session selection when clicking delete
+    try {
+      await axios.delete(`http://localhost:5000/api/chat/session/${sessionId}`);
+      // Refresh sessions will happen automatically due to useEffect
+    } catch (err) {
+      console.error('Error deleting session:', err);
+    }
+  };
+
   return (
     <Flex
       direction="column"
-      w="200px"
+      w="250px"
       bg="gray.50"
       borderRight="1px solid"
       borderColor="gray.200"
@@ -78,9 +90,10 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
 
       {/* Session List */}
       <Box mt={4} overflowY="auto" flex={20}>
+        <Text mb={2} fontWeight="bold" color="gray.600">Lịch trình gần đây</Text>
         <VStack align="stretch" spacing={1} maxH="300px" overflowY="auto" mb={4}>
           {sessions.map(s => (
-            <Box
+            <Flex
               key={s.sessionId}
               p={2}
               borderRadius="md"
@@ -88,19 +101,32 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
               cursor="pointer"
               onClick={() => onSelectSession(s.sessionId)}
               _hover={{ bg: 'teal.50' }}
+              justify="space-between"
+              align="center"
             >
-              <Text fontSize="sm" noOfLines={1}>
-                {s.sessionId.slice(0, 8)}... ({s.messageCount} msg)
-              </Text>
-              <Text fontSize="xs" color="gray.500">
-                {new Date(s.createdAt).toLocaleString()}
-              </Text>
-            </Box>
+              <Box flex={1}>
+                <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
+                  Lịch trình {new Date(s.createdAt).toLocaleDateString('vi-VN')}
+                </Text>
+                <Text fontSize="xs" color="gray.500">
+                  {new Date(s.createdAt).toLocaleTimeString('vi-VN')} ({s.messageCount} tin nhắn)
+                </Text>
+              </Box>
+              <IconButton
+                size="xs"
+                icon={<Icon as={DeleteIcon} />}
+                variant="ghost"
+                colorScheme="red"
+                onClick={(e) => handleDeleteSession(s.sessionId, e)}
+                aria-label="Delete session"
+                ml={2}
+              />
+            </Flex>
           ))}
         </VStack>
       </Box>
 
-      {/* Spacer đẩy phần dropdown xuống dưới cùng */}
+      {/* Spacer */}
       <Box flex={1} />
 
       {/* User Dropdown */}
