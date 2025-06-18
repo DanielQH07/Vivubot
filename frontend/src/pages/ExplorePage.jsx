@@ -12,10 +12,11 @@ const Sidebar = () => {
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user'))
   const username = user?.username || "Username"
+
   return (
     <Flex
       direction="column"
-      w="200px"
+      w="250px" // Đặt width giống ChatPage
       bg="gray.50"
       borderRight="1px solid"
       borderColor="gray.200"
@@ -26,7 +27,7 @@ const Sidebar = () => {
       <VStack spacing={1} align="center">
         <Image src="/logo.png" boxSize="200px" objectFit="contain" />
       </VStack>
-  
+
       {/* Sticky Nav (Chat / Explore) */}
       <Box
         position="sticky"
@@ -64,10 +65,10 @@ const Sidebar = () => {
           </Link>
         </VStack>
       </Box>
-  
+
       {/* Spacer đẩy phần dropdown xuống dưới cùng */}
       <Box flex={1} />
-  
+
       {/* User Dropdown */}
       <Menu placement="top-start">
         <MenuButton as={Button} variant="ghost" px={2} py={1} rightIcon={<ChevronUpIcon />}>
@@ -77,12 +78,14 @@ const Sidebar = () => {
           </HStack>
         </MenuButton>
         <MenuList>
-
+          <MenuItem onClick={() => navigate('/preferences')}>
+            Preferences
+          </MenuItem>
           <MenuItem
             onClick={() => {
-              localStorage.removeItem('vivubot_session_id');
-              localStorage.removeItem('token');
-              navigate('/');
+              localStorage.removeItem('vivubot_session_id')
+              localStorage.removeItem('token')
+              navigate('/')
             }}
           >
             Logout
@@ -94,6 +97,24 @@ const Sidebar = () => {
 }
 
 const Explore = () => {
+  // Dữ liệu mẫu cho map preview, bạn có thể thay đổi hoặc lấy từ API
+  const [route] = useState({
+    day1: [
+      { name: 'Chùa Dơi', latitude: 9.602521, longitude: 105.968685, time: '06:00' },
+      { name: 'Bến Ninh Kiều', latitude: 10.034024, longitude: 105.782779, time: '14:00' },
+    ],
+    day2: [
+      { name: 'Khách sạn tại Cần Thơ', latitude: 10.034024, longitude: 105.782779, time: '05:00' },
+      { name: 'Chợ nổi Cái Răng', latitude: 10.015526, longitude: 105.768924, time: '06:00' },
+      { name: 'Chùa Vĩnh Tràng', latitude: 10.360859, longitude: 106.354061, time: '14:00' },
+    ],
+    day3: [
+      { name: 'Khách sạn tại TP.HCM', latitude: 10.762622, longitude: 106.660172, time: '08:00' },
+      { name: 'Dinh Độc Lập', latitude: 10.776887, longitude: 106.695554, time: '08:30' },
+      { name: 'Chợ Bến Thành', latitude: 10.772376, longitude: 106.698390, time: '13:30' },
+    ],
+  })
+
   const items = [
     { title: 'Giangnam Coffee', subtitle: 'Coffee', img: 'https://via.placeholder.com/150' },
     { title: 'Go! Di An', subtitle: 'Supermarket', img: 'https://via.placeholder.com/150' },
@@ -103,10 +124,11 @@ const Explore = () => {
 
   return (
     <Flex h="100vh">
+      {/* Sidebar */}
       <Sidebar />
 
       {/* Explore Content */}
-      <Flex direction="column" flex={1} p={6} bg="white">
+      <Flex direction="column" flex="2" p={6} bg="gray.50" overflow="hidden"> {/* Đặt flex="2" và bg="gray.50" giống ChatPage */}
         {/* Search & Filters */}
         <HStack mb={4}>
           <InputGroup>
@@ -126,38 +148,35 @@ const Explore = () => {
         </HStack>
 
         {/* Location & Title */}
-        <Text fontSize="lg" fontWeight="semibold">Ký túc xá khu B, HCMC</Text>
-        <Text fontSize="2xl" fontWeight="bold" mb={4}>Explore things to do</Text>
+        <Box>
+          <Text fontSize="2xl" fontWeight="bold">Explore things to do</Text>
+        </Box>
 
         {/* Results Grid */}
-        <SimpleGrid columns={2} spacing={4}>
-          {items.map((it, idx) => (
-            <Box
-              key={idx}
-              bg="gray.50"
-              borderRadius="md"
-              border={it.selected ? '2px solid teal' : 'none'}
-              overflow="hidden"
-            >
-              <Image src={it.img} alt={it.title} w="100%" h="120px" objectFit="cover" />
-              <VStack align="start" p={3} spacing={1}>
-                <Text fontWeight="semibold">{it.title}</Text>
-                <Text fontSize="sm" color="gray.500">{it.subtitle}</Text>
-              </VStack>
-            </Box>
-          ))}
-        </SimpleGrid>
+        <Box my={6} overflowY="auto"> {/* Thêm overflowY giống ChatPage */}
+          <SimpleGrid columns={2} spacing={4}>
+            {items.map((it, idx) => (
+              <Box
+                key={idx}
+                bg="gray.50"
+                borderRadius="md"
+                border={it.selected ? '2px solid teal' : 'none'}
+                overflow="hidden"
+              >
+                <Image src={it.img} alt={it.title} w="100%" h="120px" objectFit="cover" />
+                <VStack align="start" p={3} spacing={1}>
+                  <Text fontWeight="semibold">{it.title}</Text>
+                  <Text fontSize="sm" color="gray.500">{it.subtitle}</Text>
+                </VStack>
+              </Box>
+            ))}
+          </SimpleGrid>
+        </Box>
       </Flex>
 
-      {/* Preview / Map */}
-      <Box w="300px" h="100vh" bg="gray.50">
-        <Image
-          src="https://via.placeholder.com/300x800?text=Map+Preview"
-          alt="map preview"
-          objectFit="cover"
-          w="100%"
-          h="100%"
-        />
+      {/* Map Preview */}
+      <Box flex="1" h="100vh" overflowY="auto" borderLeft="1px solid" borderColor="gray.200"> {/* Cấu trúc giống ChatPage */}
+        <MapPreview route={route} />
       </Box>
     </Flex>
   )

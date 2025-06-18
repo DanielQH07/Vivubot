@@ -91,7 +91,7 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
       {/* Session List */}
       <Box mt={4} overflowY="auto" flex={20}>
         <Text mb={2} fontWeight="bold" color="gray.600">Lịch trình gần đây</Text>
-        <VStack align="stretch" spacing={1} maxH="300px" overflowY="auto" mb={4}>
+        <VStack align="stretch" spacing={1} maxH="300px" mb={4}>
           {sessions.map(s => (
             <Flex
               key={s.sessionId}
@@ -138,6 +138,9 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
           </HStack>
         </MenuButton>
         <MenuList>
+          <MenuItem onClick={() => navigate('/preferences')}>
+            Preferences
+          </MenuItem>
           <MenuItem
             onClick={() => {
               localStorage.removeItem('vivubot_session_id');
