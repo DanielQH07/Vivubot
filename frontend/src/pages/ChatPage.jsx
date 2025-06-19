@@ -9,7 +9,7 @@ import ReactMarkdown from 'react-markdown'
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import MapPreview from '../components/MapPreview'
-import { extractDestinationFromText } from '../services/destinationService'
+import { extractDestinationFromText, extractDestinationsFromPrompt } from '../services/destinationService'
 
 // CSS để ẩn thanh cuộn
 const globalStyles = `
@@ -347,13 +347,18 @@ const Chat = ({ user, showItinerary, onCloseItinerary }) => {
     axios.get(`http://localhost:5000/api/chat/history/${sessionId}`)
       .then(res => {
         if (res.data.messages?.length > 0) {
-          // Loại bỏ tin nhắn trùng lặp
+          // Loại bỏ tin nhắn trùng lặp và xử lý text bot
           const uniqueMessages = res.data.messages.reduce((acc, m) => {
             const existingIndex = acc.findIndex(msg => 
               msg.sender === m.sender && msg.message === m.message
             );
             if (existingIndex === -1) {
-              acc.push({ sender: m.sender, text: m.message });
+              // Nếu là bot thì loại bỏ code block JSON
+              if (m.sender === 'bot') {
+                acc.push({ sender: m.sender, text: extractTextFromResponse(m.message) });
+              } else {
+                acc.push({ sender: m.sender, text: m.message });
+              }
             }
             return acc;
           }, []);
@@ -445,6 +450,27 @@ const Chat = ({ user, showItinerary, onCloseItinerary }) => {
     setInput('');
     setLoading(true);
     await saveMessage('user', input);
+
+    // Lấy nhiều địa danh từ prompt và lưu vào localStorage
+    try {
+      const destinations = await extractDestinationsFromPrompt(input);
+      if (destinations && destinations.length > 0) {
+        // Lưu vào allDestinations (không trùng lặp)
+        const prev = JSON.parse(localStorage.getItem('allDestinations') || '[]');
+        const merged = [...prev];
+        destinations.forEach(dest => {
+          if (!merged.find(d => d.name === dest.name)) merged.push(dest);
+        });
+        localStorage.setItem('allDestinations', JSON.stringify(merged));
+        // Gửi event cho ExplorePage
+        window.postMessage({
+          type: 'DESTINATION_UPDATE',
+          destinationInfo: destinations[0] // Ưu tiên hiển thị địa danh đầu tiên
+        }, '*');
+      }
+    } catch (err) {
+      console.error('Không thể extract nhiều địa danh:', err);
+    }
 
     try {
       const res = await axios.post('http://localhost:8000/generate-itinerary', {

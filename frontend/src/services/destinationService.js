@@ -20,4 +20,14 @@ export const extractDestinationFromText = async (placeName, type = "thành phố
     console.error('Error extracting destination:', error);
     return null;
   }
+};
+
+export const extractDestinationsFromPrompt = async (text) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/destination/multi`, { text });
+    return response.data.data; // array of destinations
+  } catch (error) {
+    console.error('Error extracting destinations:', error);
+    return [];
+  }
 }; 

@@ -1,13 +1,15 @@
 import { Container } from '@chakra-ui/react';
 import React from 'react'
 import { Flex, Text, Button, HStack } from '@chakra-ui/react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useColorMode } from '@chakra-ui/react';
 import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 import { FaPlaneDeparture } from "react-icons/fa";
 
 const Navbar = ({ isAuthenticated, user, onLogout, onToggleItinerary }) => {
     const { colorMode, toggleColorMode } = useColorMode();
+    const navigate = useNavigate();
+    const location = useLocation();
     
     return (
         <Container maxW={"1140px"} px={4}>
@@ -44,6 +46,15 @@ const Navbar = ({ isAuthenticated, user, onLogout, onToggleItinerary }) => {
                             </Text>
                             <Button colorScheme={"teal"} size="sm" onClick={onToggleItinerary}>
                                 Travel Plans
+                            </Button>
+                            <Button colorScheme="blue" size="sm" onClick={() => {
+                                if (location.pathname === '/preferences') {
+                                    navigate('/chat');
+                                } else {
+                                    navigate('/preferences');
+                                }
+                            }}>
+                                Preferences
                             </Button>
                             <Button colorScheme={"red"} size="sm" onClick={onLogout}>
                                 Logout

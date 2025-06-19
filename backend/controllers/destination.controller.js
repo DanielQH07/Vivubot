@@ -1,4 +1,5 @@
 import { getDestinationInfo } from '../services/destinationService.js';
+import { extractDestinationsFromText } from '../services/destinationService.js';
 
 export const getDestination = async (req, res) => {
   try {
@@ -33,5 +34,19 @@ export const getDestination = async (req, res) => {
       message: "Internal server error",
       error: error.message 
     });
+  }
+};
+
+export const getDestinations = async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ message: "Text parameter is required" });
+    }
+    const destinations = await extractDestinationsFromText(text);
+    res.status(200).json({ success: true, data: destinations });
+  } catch (error) {
+    console.error('❌ Error in getDestinations:', error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
   }
 }; 

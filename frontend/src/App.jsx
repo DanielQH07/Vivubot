@@ -60,58 +60,35 @@ function App() {
       />
 
       <Routes>
-        <Route 
-          path="/login" 
-          element={
-            !isAuthenticated ? 
-            <LoginPage onLogin={handleLogin} /> : 
-            <Navigate to="/chat" replace />
-          } 
-        />
-        <Route 
-          path="/signup" 
-          element={
-            !isAuthenticated ? 
-            <SignupPage onLogin={handleLogin} /> : 
-            <Navigate to="/chat" replace />
-          } 
-        />
-        <Route 
-          path="/chat" 
-          element={
-            isAuthenticated ? 
-            <ChatPage user={user} showItinerary={showItinerary} onCloseItinerary={() => setShowItinerary(false)} /> : 
-            <Navigate to="/login" replace />
-          } 
-        />
-        <Route 
-          path="/explore" 
-          element={
-            isAuthenticated ? 
-            <ExplorePage user={user} /> : 
-            <Navigate to="/login" replace />
-          }
-        />
-        <Route 
-          path="/create"
-          element={
-            isAuthenticated ? 
-            <CreatePage /> : 
-            <Navigate to="/login" replace />
-          }
-        />
-        <Route 
-          path="/" 
-          element={<HomePage />}
-        />
-        <Route 
-          path="/preferences" 
-          element={
-            isAuthenticated ? 
-            <PreferencesPage /> : 
-            <Navigate to="/login" replace />
-          }
-        />
+        <Route path="/login" element={
+          !isAuthenticated ? <LoginPage onLogin={handleLogin} /> : (
+            !user?.hasPreferences ? <Navigate to="/preferences" replace /> : <Navigate to="/chat" replace />
+          )
+        } />
+        <Route path="/signup" element={
+          !isAuthenticated ? <SignupPage onLogin={handleLogin} /> : (
+            !user?.hasPreferences ? <Navigate to="/preferences" replace /> : <Navigate to="/chat" replace />
+          )
+        } />
+        <Route path="/preferences" element={
+          isAuthenticated ? <PreferencesPage /> : <Navigate to="/login" replace />
+        } />
+        <Route path="/chat" element={
+          isAuthenticated
+            ? (user?.hasPreferences ? <ChatPage user={user} showItinerary={showItinerary} onCloseItinerary={() => setShowItinerary(false)} /> : <Navigate to="/preferences" replace />)
+            : <Navigate to="/login" replace />
+        } />
+        <Route path="/explore" element={
+          isAuthenticated
+            ? (user?.hasPreferences ? <ExplorePage user={user} /> : <Navigate to="/preferences" replace />)
+            : <Navigate to="/login" replace />
+        } />
+        <Route path="/create" element={
+          isAuthenticated
+            ? (user?.hasPreferences ? <CreatePage /> : <Navigate to="/preferences" replace />)
+            : <Navigate to="/login" replace />
+        } />
+        <Route path="/" element={<HomePage />} />
       </Routes>
     </Box>
   );

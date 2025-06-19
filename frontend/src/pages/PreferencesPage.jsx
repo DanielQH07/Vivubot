@@ -7,6 +7,7 @@ import {
 import { ChatIcon, SearchIcon, SettingsIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { FaHiking, FaMapMarkerAlt, FaUtensils, FaMoneyBillWave, FaCalendarAlt, FaUmbrellaBeach, FaCity, FaLeaf, FaPagelines, FaFish, FaSeedling, FaRegClock, FaSpa, FaMountain, FaTree, FaHome, FaCar, FaBiking, FaPlane, FaShip, FaRegSmile, FaRegStar, FaRegSun, FaRegSnowflake, FaRegCalendarAlt } from 'react-icons/fa';
 
 // --- LOGGING VỊ TRÍ 1: Ngay khi component được định nghĩa ---
 console.log("PreferencesPage.jsx: Component file loaded and defined.");
@@ -70,6 +71,43 @@ const PreferencesPage = () => {
         cuisineType: cuisineTypesOptions,
         budgetLevel: budgetLevelsOptions,
         travelTime: travelTimesOptions,
+    };
+
+    // Icon mapping cho từng option
+    const optionIcons = {
+        // travelStyle
+        'Phiêu lưu': <FaHiking color="#E53E3E" />, // đỏ
+        'Thư giãn': <FaSpa color="#38A169" />, // xanh lá
+        'Cổ kính': <FaPagelines color="#805AD5" />, // tím
+        'Hiện đại': <FaCity color="#3182CE" />, // xanh dương
+        'Tự nhiên': <FaLeaf color="#319795" />, // teal
+        'Khác': <FaRegStar color="#D69E2E" />, // vàng
+
+        // locationType
+        'Biển': <FaUmbrellaBeach color="#3182CE" />,
+        'Núi': <FaMountain color="#805AD5" />,
+        'Thành phố': <FaCity color="#38A169" />,
+        'Nông thôn': <FaHome color="#D69E2E" />,
+        'Rừng': <FaTree color="#319795" />,
+        // ...
+
+        // cuisineType
+        'Việt Nam': <FaUtensils color="#E53E3E" />,
+        'Âu': <FaFish color="#3182CE" />,
+        'Á': <FaSeedling color="#38A169" />,
+        'Chay': <FaLeaf color="#319795" />,
+        'Hải sản': <FaFish color="#805AD5" />,
+
+        // budgetLevel
+        'Thấp': <FaMoneyBillWave color="#38A169" />,
+        'Trung bình': <FaMoneyBillWave color="#D69E2E" />,
+        'Cao': <FaMoneyBillWave color="#E53E3E" />,
+
+        // travelTime
+        'Mùa hè': <FaRegSun color="#E53E3E" />,
+        'Mùa đông': <FaRegSnowflake color="#3182CE" />,
+        'Mùa xuân': <FaSeedling color="#38A169" />,
+        'Mùa thu': <FaRegSmile color="#D69E2E" />,
     };
 
     // --- LOGIC FETCH PREFERENCES ---
@@ -196,7 +234,7 @@ const PreferencesPage = () => {
                 duration: 3000,
                 isClosable: true,
             });
-            navigate('/chat');
+            window.location.href = '/chat';
         } catch (err) {
             // --- LOGGING VỊ TRÍ 8: Lưu thất bại ---
             console.error("PreferencesPage: Failed to save preferences:", err.response?.data || err.message || err);
@@ -221,22 +259,23 @@ const PreferencesPage = () => {
         setPreferences(prev => ({ ...prev, [category]: values }));
     }, []);
 
-    const renderPreferenceSection = (category, options) => (
+    const renderPreferenceSection = (category, options, label, icon) => (
         <Box p={4} borderWidth="1px" borderRadius="lg" bg="white" boxShadow="sm">
-            <Text fontSize="lg" fontWeight="semibold" mb={3} color="gray.700">
-                {category.replace(/([A-Z])/g, ' $1').replace('traveltime', 'Travel Time').replace('travelstyle', 'Travel Style').replace('locationtype', 'Location Type').replace('cuisinetype', 'Cuisine Type').replace('budgetlevel', 'Budget Level')}
+            <Text fontSize="lg" fontWeight="semibold" mb={3} color="gray.700" display="flex" alignItems="center">
+                {icon} {label}
             </Text>
             <CheckboxGroup value={preferences[category]} onChange={(values) => handleCheckboxChange(category, values)}>
-                {/* SỬ DỤNG SIMPLEGRID ĐỂ TẠO BỐ CỤC LƯỚI THẲNG HÀNG */}
                 <SimpleGrid
-                    columns={{ base: 1, sm: 2, md: 3, lg: 4 }} // Số cột tùy thuộc vào kích thước màn hình
-                    spacing={4} // Khoảng cách giữa các ô trong lưới
-                    minChildWidth="120px" // Đảm bảo mỗi ô có chiều rộng tối thiểu, các ô sẽ giãn ra để lấp đầy
+                    columns={{ base: 1, sm: 2, md: 3, lg: 4 }}
+                    spacing={4}
+                    minChildWidth="120px"
                 >
                     {options.map(option => (
-                        // Mỗi Checkbox được bọc trong một Box để kiểm soát kích thước và thẳng hàng
-                        <Box key={option}>
+                        <Box key={option} display="flex" alignItems="center">
                             <Checkbox value={option} size="md">
+                                <Box as="span" mr={2} display="inline-flex" alignItems="center">
+                                    {optionIcons[option] || <FaRegStar color="#A0AEC0" />}
+                                </Box>
                                 {option}
                             </Checkbox>
                         </Box>
@@ -246,7 +285,7 @@ const PreferencesPage = () => {
             {preferences[category].includes('Khác') && (
                 <Input
                     mt={3}
-                    placeholder={`Nhập lựa chọn tùy chỉnh của bạn`}
+                    placeholder={`Nhập lựa chọn riêng của bạn...`}
                     value={preferences[`custom${category.charAt(0).toUpperCase() + category.slice(1)}`]}
                     onChange={(e) => handleCustomInput(category, e.target.value)}
                     focusBorderColor="teal.400"
@@ -345,25 +384,25 @@ const PreferencesPage = () => {
             {/* Preferences Form - Main Content */}
             <Flex direction="column" flex="2" p={6} bg="gray.100" overflowY="auto">
                 <Box mb={6}>
-                    <Text fontSize="3xl" fontWeight="bold" color="gray.800" mb={1}>Travel Preferences</Text>
-                    <Text fontSize="md" color="gray.600">Hãy cho chúng tôi biết sở thích du lịch của bạn để có những gợi ý tốt nhất!</Text>
+                    <Text fontSize="3xl" fontWeight="bold" color="gray.800" mb={1}>Sở thích du lịch của bạn</Text>
+                    <Text fontSize="md" color="gray.600">Hãy cho Vivubot biết sở thích để nhận gợi ý phù hợp nhất!</Text>
                 </Box>
                 <VStack spacing={6} align="stretch">
-                    {renderPreferenceSection('travelStyle', travelStylesOptions)}
-                    {renderPreferenceSection('locationType', locationTypesOptions)}
-                    {renderPreferenceSection('cuisineType', cuisineTypesOptions)}
-                    {renderPreferenceSection('budgetLevel', budgetLevelsOptions)}
-                    {renderPreferenceSection('travelTime', travelTimesOptions)}
+                    {renderPreferenceSection('travelStyle', travelStylesOptions, 'Phong cách du lịch', <FaHiking color="#319795" style={{marginRight: 8}} />)}
+                    {renderPreferenceSection('locationType', locationTypesOptions, 'Loại địa điểm yêu thích', <FaMapMarkerAlt color="#319795" style={{marginRight: 8}} />)}
+                    {renderPreferenceSection('cuisineType', cuisineTypesOptions, 'Ẩm thực yêu thích', <FaUtensils color="#319795" style={{marginRight: 8}} />)}
+                    {renderPreferenceSection('budgetLevel', budgetLevelsOptions, 'Mức chi tiêu dự kiến', <FaMoneyBillWave color="#319795" style={{marginRight: 8}} />)}
+                    {renderPreferenceSection('travelTime', travelTimesOptions, 'Thời gian du lịch mong muốn', <FaCalendarAlt color="#319795" style={{marginRight: 8}} />)}
 
                     <Button
                         colorScheme="teal"
                         size="lg"
                         w="full"
                         mt={6}
-                        onClick={handleSubmit} // Đây là nút chính, đảm bảo không nằm trong form hoặc đã xử lý submit
+                        onClick={handleSubmit}
                         _hover={{ bg: 'teal.500' }}
                     >
-                        Lưu Sở Thích
+                        Lưu sở thích
                     </Button>
                 </VStack>
             </Flex>
