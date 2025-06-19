@@ -1,6 +1,6 @@
 // ChatPage.jsx
 import React, { useState, useEffect } from 'react'
-import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image, Menu, MenuButton, MenuList, MenuItem, Icon, Button, Divider, Spacer, Badge, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Tabs, TabList, Tab, TabPanels, TabPanel, Switch } from '@chakra-ui/react'
+import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image, Menu, MenuButton, MenuList, MenuItem, Icon, Button, Divider, Spacer, Badge, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Tabs, TabList, Tab, TabPanels, TabPanel, Switch, useToast } from '@chakra-ui/react'
 import { ChatIcon, SearchIcon, SettingsIcon, ChevronUpIcon, DeleteIcon } from '@chakra-ui/icons'
 import { FaPaperPlane, FaExpand, FaCompress, FaList } from 'react-icons/fa'
 import { Link, useLocation, useNavigate  } from 'react-router-dom'
@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown'
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import MapPreview from '../components/MapPreview'
+import { extractDestinationFromText } from '../services/destinationService'
 
 // CSS để ẩn thanh cuộn
 const globalStyles = `
@@ -165,20 +166,14 @@ const ItineraryPanel = ({ route, selectedDay, onDaySelect, isVisible, onClose })
   const [tabIndex, setTabIndex] = useState(0);
   const [showDistances, setShowDistances] = useState(false);
 
-  // Giả lập thông tin chuyến đi (có thể lấy từ props hoặc context thực tế)
-  const tripTitle = "Da Nang Travel Tips";
-  const location = "Da Nang";
-  const dateRange = "May 29 – Jun 2";
-  const travelers = "2 travelers";
+  // Xóa dữ liệu mẫu, để trống cho demo thực tế
+  const tripTitle = "";
+  const location = "";
+  const dateRange = "";
+  const travelers = "";
 
-  // Giả lập ngày tháng cho từng ngày (có thể tính toán thực tế nếu có dữ liệu)
-  const dayLabels = [
-    { day: 1, label: "Thu, May 29" },
-    { day: 2, label: "Fri, May 30" },
-    { day: 3, label: "Sat, May 31" },
-    { day: 4, label: "Sun, Jun 1" },
-    { day: 5, label: "Mon, Jun 2" },
-  ];
+  // Xóa dữ liệu mẫu ngày tháng
+  const dayLabels = [];
 
   return (
     <Box
@@ -197,12 +192,11 @@ const ItineraryPanel = ({ route, selectedDay, onDaySelect, isVisible, onClose })
     >
       {/* Header */}
       <Box px={8} pt={8} pb={2} borderBottom="1px solid" borderColor="gray.100">
-        <Text fontSize="2xl" fontWeight="bold">{tripTitle}</Text>
+        <Text fontSize="2xl" fontWeight="bold">{tripTitle || "Your Trip"}</Text>
         <HStack mt={2} spacing={2}>
-          <Button size="sm" variant="outline">{location}</Button>
-          <Button size="sm" variant="outline">{dateRange}</Button>
-          <Button size="sm" variant="outline">{travelers}</Button>
-          <Button size="sm" variant="outline">$</Button>
+          {location && <Button size="sm" variant="outline">{location}</Button>}
+          {dateRange && <Button size="sm" variant="outline">{dateRange}</Button>}
+          {travelers && <Button size="sm" variant="outline">{travelers}</Button>}
         </HStack>
       </Box>
       {/* Tabs */}
@@ -325,26 +319,17 @@ const Chat = ({ user, showItinerary, onCloseItinerary }) => {
   const [loading, setLoading] = useState(false);
   const [route, setRoute] = useState(() => {
     return {
-      day1: [
-        {"name": "Chùa Dơi", "latitude": 9.602521, "longitude": 105.968685, "time": "06:00"},
-        {"name": "Bến Ninh Kiều", "latitude": 10.034024, "longitude": 105.782779, "time": "14:00"}
-      ],
-      day2: [
-        {"name": "Khách sạn tại Cần Thơ", "latitude": 10.034024, "longitude": 105.782779, "time": "05:00"},
-        {"name": "Chợ nổi Cái Răng", "latitude": 10.015526, "longitude": 105.768924, "time": "06:00"},
-        {"name": "Chùa Vĩnh Tràng", "latitude": 10.360859, "longitude": 106.354061, "time": "14:00"}
-      ],
-      day3: [
-        {"name": "Khách sạn tại TP.HCM", "latitude": 10.762622, "longitude": 106.660172, "time": "08:00"},
-        {"name": "Dinh Độc Lập", "latitude": 10.776887, "longitude": 106.695554, "time": "08:30"},
-        {"name": "Chợ Bến Thành", "latitude": 10.772376, "longitude": 106.698390, "time": "13:30"}
-      ]
+      day1: [],
+      day2: [],
+      day3: []
     };
   });
   const [sessionId, setSessionId] = useState(() => getSessionId());
   const [sessions, setSessions] = useState([]);
   const [selectedDay, setSelectedDay] = useState('day1');
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const [destinationInfo, setDestinationInfo] = useState(null);
+  const toast = useToast();
 
   // Thêm global styles để ẩn thanh cuộn
   useEffect(() => {
@@ -491,6 +476,30 @@ const Chat = ({ user, showItinerary, onCloseItinerary }) => {
       if (routeData) {
         setRoute(routeData);
         setSelectedDay('day1'); // Reset to first day when new route is generated
+        
+        // Lấy thông tin địa danh từ route data nếu có
+        const firstDay = routeData.day1 || routeData.day2 || routeData.day3;
+        if (firstDay && firstDay.length > 0) {
+          const firstLocation = firstDay[0];
+          if (firstLocation && firstLocation.name) {
+            try {
+              const destinationData = await extractDestinationFromText(firstLocation.name);
+              if (destinationData) {
+                setDestinationInfo(destinationData);
+                // Lưu vào localStorage để ExplorePage có thể truy cập
+                localStorage.setItem('destinationInfo', JSON.stringify(destinationData));
+                // Gửi event cho ExplorePage
+                window.postMessage({
+                  type: 'DESTINATION_UPDATE',
+                  destinationInfo: destinationData
+                }, '*');
+                console.log('✅ Destination info extracted:', destinationData);
+              }
+            } catch (error) {
+              console.log('⚠️ Could not extract destination info:', error);
+            }
+          }
+        }
       } else {
         setRoute({ day1: [], day2: [], day3: [] });
       }
@@ -517,20 +526,9 @@ const Chat = ({ user, showItinerary, onCloseItinerary }) => {
     setMessages([{ sender: 'bot', text: "Hi, I'm vivu!" }]);
     setRoute(() => {
       return {
-        day1: [
-          {"name": "Chùa Dơi", "latitude": 9.602521, "longitude": 105.968685, "time": "06:00"},
-          {"name": "Bến Ninh Kiều", "latitude": 10.034024, "longitude": 105.782779, "time": "14:00"}
-        ],
-        day2: [
-          {"name": "Khách sạn tại Cần Thơ", "latitude": 10.034024, "longitude": 105.782779, "time": "05:00"},
-          {"name": "Chợ nổi Cái Răng", "latitude": 10.015526, "longitude": 105.768924, "time": "06:00"},
-          {"name": "Chùa Vĩnh Tràng", "latitude": 10.360859, "longitude": 106.354061, "time": "14:00"}
-        ],
-        day3: [
-          {"name": "Khách sạn tại TP.HCM", "latitude": 10.762622, "longitude": 106.660172, "time": "08:00"},
-          {"name": "Dinh Độc Lập", "latitude": 10.776887, "longitude": 106.695554, "time": "08:30"},
-          {"name": "Chợ Bến Thành", "latitude": 10.772376, "longitude": 106.698390, "time": "13:30"}
-        ]
+        day1: [],
+        day2: [],
+        day3: []
       };
     });
     setSelectedDay('day1');

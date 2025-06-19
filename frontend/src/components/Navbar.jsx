@@ -4,6 +4,7 @@ import { Flex, Text, Button, HStack } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import { useColorMode } from '@chakra-ui/react';
 import { MoonIcon, SunIcon } from '@chakra-ui/icons';
+import { FaPlaneDeparture } from "react-icons/fa";
 
 const Navbar = ({ isAuthenticated, user, onLogout, onToggleItinerary }) => {
     const { colorMode, toggleColorMode } = useColorMode();
@@ -27,7 +28,12 @@ const Navbar = ({ isAuthenticated, user, onLogout, onToggleItinerary }) => {
                     bgGradient="linear(to-r, teal.500, green.500)"
                     bgClip="text"
                 >
-                    <Link to={"/"}>VivuBot ✈️</Link>
+                    <Link to={"/"}>
+                    <HStack spacing={2} align="center">
+                        <Text fontWeight="bold" color="teal.600">VIVUBOT</Text>
+                        <FaPlaneDeparture size={20} color="#319795" />
+                    </HStack>
+                    </Link>
                 </Text>
 
                 <HStack spacing={2} alignItems={"center"} justifyContent={"center"}>

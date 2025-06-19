@@ -183,6 +183,12 @@ const PreferencesPage = () => {
 
             // --- LOGGING VỊ TRÍ 7: Lưu thành công ---
             console.log("PreferencesPage: Preferences saved successfully. Navigating to /chat.");
+            
+            // Cập nhật user data với hasPreferences = true
+            const updatedUser = { ...user, hasPreferences: true };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            setUser(updatedUser);
+            
             toast({
                 title: 'Sở Thích Đã Lưu',
                 description: 'Sở thích du lịch của bạn đã được cập nhật.',

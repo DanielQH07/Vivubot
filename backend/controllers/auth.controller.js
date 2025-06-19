@@ -39,7 +39,8 @@ export const registerUser = async (req, res) => {
             user: {
                 id: newUser._id,
                 username: newUser.username,
-                email: newUser.email
+                email: newUser.email,
+                hasPreferences: newUser.hasPreferences
             }
         });
     } catch (err) {
@@ -90,7 +91,8 @@ export const loginUser = async (req, res) => {
             user: { 
                 id: user._id, 
                 username: user.username, 
-                email: user.email 
+                email: user.email,
+                hasPreferences: user.hasPreferences
             },
             message: "Login successful"
         });
@@ -148,7 +150,10 @@ export const updatePreferences = async (req, res) => {
         // Sử dụng findByIdAndUpdate với $set để cập nhật các trường cụ thể
         const updatedUser = await User.findByIdAndUpdate(
             userId,
-            { $set: updateFields }, // $set sẽ cập nhật các trường được chỉ định mà không ảnh hưởng đến các trường khác
+            { 
+                $set: updateFields,
+                hasPreferences: true // Set hasPreferences = true khi user lưu preferences
+            }, // $set sẽ cập nhật các trường được chỉ định mà không ảnh hưởng đến các trường khác
             { new: true, runValidators: true } // `new: true` trả về document đã được cập nhật
         );
 

@@ -21,8 +21,9 @@ function App() {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     if (token && userData) {
+      const parsedUser = JSON.parse(userData);
       setIsAuthenticated(true);
-      setUser(JSON.parse(userData));
+      setUser(parsedUser);
     }
   }, []);
 
@@ -31,6 +32,15 @@ function App() {
     localStorage.setItem('user', JSON.stringify(userData));
     setIsAuthenticated(true);
     setUser(userData);
+    
+    // Logic routing dựa trên hasPreferences
+    if (!userData.hasPreferences) {
+      // User chưa có preferences, chuyển đến preferences page
+      window.location.href = '/preferences';
+    } else {
+      // User đã có preferences, chuyển đến chat page
+      window.location.href = '/chat';
+    }
   };
 
   const handleLogout = () => {

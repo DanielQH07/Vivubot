@@ -16,6 +16,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    hasPreferences: {
+        type: Boolean,
+        default: false,
+    },
     preferences: {
         travelStyle: { type: [String], default: [] },
         locationType: { type: [String], default: [] },

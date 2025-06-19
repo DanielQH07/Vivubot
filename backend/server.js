@@ -5,6 +5,7 @@ import iteratorRoutes from './routes/iterator.route.js';
 import authRoutes from './routes/auth.route.js';
 import chatRoutes from './routes/chat.route.js';
 import routeRoutes from './routes/route.route.js';
+import destinationRoutes from './routes/destination.route.js';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use("/api/iterator", iteratorRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/route", routeRoutes);
+app.use("/api/destination", destinationRoutes);
 
 // Khởi động server
 app.listen(PORT, () => {

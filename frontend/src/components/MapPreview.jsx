@@ -102,10 +102,10 @@ const MapPreview = ({ route, selectedDay = 'day1' }) => {
     fetchRoute();
   }, [route, selectedDay]);
 
-  if (!route) {
+  if (!route || Object.keys(route).length === 0) {
     return (
       <Box h="100%" display="flex" alignItems="center" justifyContent="center" bg="gray.50">
-        <Text color="gray.500">No route data available</Text>
+        <Text color="gray.500">No route data available. Start a conversation to see your itinerary!</Text>
       </Box>
     );
   }

@@ -76,7 +76,6 @@ const LoginPage = ({ onLogin }) => {
 
       onLogin(data.token, data.user);
       toast({ title: 'Đăng nhập thành công', status: 'success', duration: 3000, isClosable: true });
-      navigate('/chat');
     } catch (err) {
       toast({ title: 'Error', description: err.message, status: 'error', duration: 4000, isClosable: true });
     } finally {
