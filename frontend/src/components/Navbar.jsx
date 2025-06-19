@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useColorMode } from '@chakra-ui/react';
 import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 
-const Navbar = ({ isAuthenticated, user, onLogout }) => {
+const Navbar = ({ isAuthenticated, user, onLogout, onToggleItinerary }) => {
     const { colorMode, toggleColorMode } = useColorMode();
     
     return (
@@ -36,11 +36,9 @@ const Navbar = ({ isAuthenticated, user, onLogout }) => {
                             <Text fontSize="sm" color="gray.600">
                                 Welcome, {user?.username}!
                             </Text>
-                            <Link to={"/travel-plans"}>
-                                <Button colorScheme={"teal"} size="sm">
-                                    Travel Plans
-                                </Button>
-                            </Link>
+                            <Button colorScheme={"teal"} size="sm" onClick={onToggleItinerary}>
+                                Travel Plans
+                            </Button>
                             <Button colorScheme={"red"} size="sm" onClick={onLogout}>
                                 Logout
                             </Button>

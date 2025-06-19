@@ -1,32 +1,34 @@
 // ChatPage.jsx
 import React, { useState, useEffect } from 'react'
-import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image, Menu, MenuButton, MenuList, MenuItem, Icon, Button, Divider, Spacer } from '@chakra-ui/react'
+import { Flex, Box, VStack, HStack, Text, Input, InputGroup, InputRightElement, IconButton, Image, Menu, MenuButton, MenuList, MenuItem, Icon, Button, Divider, Spacer, Badge, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Tabs, TabList, Tab, TabPanels, TabPanel, Switch } from '@chakra-ui/react'
 import { ChatIcon, SearchIcon, SettingsIcon, ChevronUpIcon, DeleteIcon } from '@chakra-ui/icons'
-import { FaPaperPlane } from 'react-icons/fa'
+import { FaPaperPlane, FaExpand, FaCompress, FaList } from 'react-icons/fa'
 import { Link, useLocation, useNavigate  } from 'react-router-dom'
 import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import SplitPane from 'react-split-pane'
 import MapPreview from '../components/MapPreview'
 
-const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }) => {
+// CSS để ẩn thanh cuộn
+const globalStyles = `
+  body {
+    overflow: hidden !important;
+  }
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+`;
+
+const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId, onDeleteSession }) => {
   const { pathname } = useLocation()
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
   const username = user?.username || "Username";
-
-  // Add delete session handler
-  const handleDeleteSession = async (sessionId, e) => {
-    e.stopPropagation(); // Prevent session selection when clicking delete
-    try {
-      await axios.delete(`http://localhost:5000/api/chat/session/${sessionId}`);
-      // Refresh sessions will happen automatically due to useEffect
-    } catch (err) {
-      console.error('Error deleting session:', err);
-    }
-  };
 
   return (
     <Flex
@@ -89,9 +91,9 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
       </Box>
 
       {/* Session List */}
-      <Box mt={4} overflowY="auto" flex={20}>
+      <Box mt={4} flex={1} overflow="hidden">
         <Text mb={2} fontWeight="bold" color="gray.600">Lịch trình gần đây</Text>
-        <VStack align="stretch" spacing={1} maxH="300px" overflowY="auto" mb={4}>
+        <VStack align="stretch" spacing={1} h="calc(100vh - 400px)" overflowY="auto">
           {sessions.map(s => (
             <Flex
               key={s.sessionId}
@@ -117,7 +119,10 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
                 icon={<Icon as={DeleteIcon} />}
                 variant="ghost"
                 colorScheme="red"
-                onClick={(e) => handleDeleteSession(s.sessionId, e)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteSession(s.sessionId);
+                }}
                 aria-label="Delete session"
                 ml={2}
               />
@@ -125,9 +130,6 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
           ))}
         </VStack>
       </Box>
-
-      {/* Spacer */}
-      <Box flex={1} />
 
       {/* User Dropdown */}
       <Menu placement="top-start">
@@ -141,8 +143,8 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
           <MenuItem
             onClick={() => {
               localStorage.removeItem('vivubot_session_id');
-              localStorage.removeItem('token'); // Xóa thông tin người dùng
-              navigate('/');                   // Quay về trang home
+              localStorage.removeItem('token');
+              navigate('/');
             }}
           >
             Logout
@@ -150,6 +152,135 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId }
         </MenuList>
       </Menu>
     </Flex>
+  );
+};
+
+const ItineraryPanel = ({ route, selectedDay, onDaySelect, isVisible, onClose }) => {
+  if (!isVisible) return null;
+
+  const availableDays = Object.keys(route || {});
+  const [tabIndex, setTabIndex] = useState(0);
+  const [showDistances, setShowDistances] = useState(false);
+
+  // Giả lập thông tin chuyến đi (có thể lấy từ props hoặc context thực tế)
+  const tripTitle = "Da Nang Travel Tips";
+  const location = "Da Nang";
+  const dateRange = "May 29 – Jun 2";
+  const travelers = "2 travelers";
+
+  // Giả lập ngày tháng cho từng ngày (có thể tính toán thực tế nếu có dữ liệu)
+  const dayLabels = [
+    { day: 1, label: "Thu, May 29" },
+    { day: 2, label: "Fri, May 30" },
+    { day: 3, label: "Sat, May 31" },
+    { day: 4, label: "Sun, Jun 1" },
+    { day: 5, label: "Mon, Jun 2" },
+  ];
+
+  return (
+    <Box
+      position="fixed"
+      top="64px"
+      right={0}
+      w={["100vw", null, "420px"]}
+      h="calc(100vh - 64px)"
+      bg="white"
+      borderLeft="1px solid"
+      borderColor="gray.200"
+      zIndex={2500}
+      overflowY="auto"
+      boxShadow="xl"
+      p={0}
+    >
+      {/* Header */}
+      <Box px={8} pt={8} pb={2} borderBottom="1px solid" borderColor="gray.100">
+        <Text fontSize="2xl" fontWeight="bold">{tripTitle}</Text>
+        <HStack mt={2} spacing={2}>
+          <Button size="sm" variant="outline">{location}</Button>
+          <Button size="sm" variant="outline">{dateRange}</Button>
+          <Button size="sm" variant="outline">{travelers}</Button>
+          <Button size="sm" variant="outline">$</Button>
+        </HStack>
+      </Box>
+      {/* Tabs */}
+      <Tabs index={tabIndex} onChange={setTabIndex} variant="unstyled" mt={2} px={8}>
+        <TabList borderBottom="1px solid" borderColor="gray.200">
+          <Tab fontWeight="bold" _selected={{ borderBottom: "2px solid black" }}>Itinerary</Tab>
+          <Tab fontWeight="bold" _selected={{ borderBottom: "2px solid black" }}>Calendar</Tab>
+          <Tab fontWeight="bold" _selected={{ borderBottom: "2px solid black" }}>Bookings</Tab>
+          <Spacer />
+          <HStack spacing={2}>
+            <Button size="sm" variant="ghost" onClick={onClose}>
+              <span style={{ fontSize: 20 }}>&#8592;</span>
+            </Button>
+          </HStack>
+        </TabList>
+        <TabPanels>
+          <TabPanel px={0}>
+            {/* Itinerary summary */}
+            <Flex align="center" px={2} py={2} borderBottom="1px solid" borderColor="gray.100">
+              <Text fontWeight="bold" fontSize="lg">Itinerary</Text>
+              <Text color="gray.500" ml={2}>{availableDays.length} days</Text>
+              <Spacer />
+              <Text color="gray.500" fontSize="sm" mr={2}>Distances</Text>
+              <Switch size="md" isChecked={showDistances} onChange={e => setShowDistances(e.target.checked)} />
+            </Flex>
+            {/* Days Accordion */}
+            <Accordion allowToggle defaultIndex={[0]} px={2}>
+              {availableDays.map((day, idx) => (
+                <AccordionItem key={day} border="none">
+                  <AccordionButton
+                    onClick={() => onDaySelect(day)}
+                    bg={selectedDay === day ? 'gray.100' : 'transparent'}
+                    _hover={{ bg: 'gray.50' }}
+                    borderRadius="md"
+                    py={4}
+                  >
+                    <Box flex="1" textAlign="left">
+                      <Text fontWeight="bold" fontSize="md">
+                        Day {idx + 1} {route[day][0]?.name ? ` ${route[day][0]?.name}` : ''}
+                        <Text as="span" color="gray.500" fontWeight="normal" fontSize="sm" ml={2}>
+                          {dayLabels[idx]?.label || ''}
+                        </Text>
+                      </Text>
+                    </Box>
+                    <AccordionIcon />
+                  </AccordionButton>
+                  <AccordionPanel pb={4}>
+                    <VStack align="stretch" spacing={2}>
+                      {route[day]?.map((location, index) => (
+                        <Box
+                          key={index}
+                          p={3}
+                          border="1px solid"
+                          borderColor="gray.200"
+                          borderRadius="md"
+                          bg="gray.50"
+                        >
+                          <Text fontWeight="medium" color="teal.600">
+                            {location.name}
+                          </Text>
+                          <Text fontSize="sm" color="gray.600">
+                            Thời gian: {location.time}
+                          </Text>
+                          
+                        </Box>
+                      ))}
+                    </VStack>
+                  </AccordionPanel>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </TabPanel>
+          <TabPanel>
+            <Text p={4}>Calendar view coming soon...</Text>
+          </TabPanel>
+          <TabPanel>
+            <Text p={4}>Bookings view coming soon...</Text>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </Box>
   );
 };
 
@@ -162,14 +293,34 @@ const getSessionId = () => {
   return sessionId;
 };
 
-const Chat = ({ user }) => {
+// Hàm tách JSON khỏi response text
+const extractTextFromResponse = (text) => {
+  try {
+    // Tìm và loại bỏ phần JSON ở cuối
+    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      return text.replace(jsonMatch[0], '').trim();
+    }
+    
+    // Nếu không có code block, tìm JSON object
+    const jsonObjectMatch = text.match(/\{[\s\S]*"route"[\s\S]*\}/);
+    if (jsonObjectMatch) {
+      return text.replace(jsonObjectMatch[0], '').trim();
+    }
+    
+    return text;
+  } catch (error) {
+    return text;
+  }
+};
+
+const Chat = ({ user, showItinerary, onCloseItinerary }) => {
   const [messages, setMessages] = useState([
     { sender: 'bot', text: "Hi, I'm vivu!" }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [route, setRoute] = useState(() => {
-    // Test route data
     return {
       day1: [
         {"name": "Chùa Dơi", "latitude": 9.602521, "longitude": 105.968685, "time": "06:00"},
@@ -189,29 +340,36 @@ const Chat = ({ user }) => {
   });
   const [sessionId, setSessionId] = useState(() => getSessionId());
   const [sessions, setSessions] = useState([]);
+  const [selectedDay, setSelectedDay] = useState('day1');
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
 
-  // Format message text to handle JSON and other special content
-  const formatMessageText = (text) => {
-    try {
-      // Try to parse as JSON
-      const parsed = JSON.parse(text);
-      // If it's an object, stringify it with proper formatting
-      if (typeof parsed === 'object') {
-        return JSON.stringify(parsed, null, 2);
-      }
-      return text;
-    } catch (e) {
-      // If it's not JSON, return as is
-      return text;
-    }
-  };
+  // Thêm global styles để ẩn thanh cuộn
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = globalStyles;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // Lấy lịch sử chat khi load trang hoặc đổi sessionId
   useEffect(() => {
     axios.get(`http://localhost:5000/api/chat/history/${sessionId}`)
       .then(res => {
         if (res.data.messages?.length > 0) {
-          setMessages(res.data.messages.map(m => ({ sender: m.sender, text: m.message })));
+          // Loại bỏ tin nhắn trùng lặp
+          const uniqueMessages = res.data.messages.reduce((acc, m) => {
+            const existingIndex = acc.findIndex(msg => 
+              msg.sender === m.sender && msg.message === m.message
+            );
+            if (existingIndex === -1) {
+              acc.push({ sender: m.sender, text: m.message });
+            }
+            return acc;
+          }, []);
+          setMessages(uniqueMessages);
         } else {
           setMessages([{ sender: 'bot', text: "Hi, I'm vivu!" }]);
         }
@@ -243,6 +401,25 @@ const Chat = ({ user }) => {
       });
     } catch (err) {}
   };
+
+  // Xóa session
+  const handleDeleteSession = async (sessionIdToDelete) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/chat/session/${sessionIdToDelete}`);
+      // Refresh sessions
+      if (user && user.id) {
+        const res = await axios.get(`http://localhost:5000/api/chat/sessions?userId=${user.id}`);
+        setSessions(res.data.sessions || []);
+      }
+      // If deleted session is current session, create new one
+      if (sessionIdToDelete === sessionId) {
+        handleNewChat();
+      }
+    } catch (err) {
+      console.error('Error deleting session:', err);
+    }
+  };
+
   // Parse route data from markdown text
   const parseRouteFromText = (text) => {
     try {
@@ -284,23 +461,33 @@ const Chat = ({ user }) => {
     try {
       const res = await axios.post('http://localhost:8000/generate-itinerary', {
         text: input,
-        ai_provider: "gpt"
-      });      console.log('API Response:', res.data);
+        ai_provider: "gpt",
+        history: messages.map(m => ({
+          role: m.sender === 'user' ? 'user' : 'assistant',
+          content: m.text
+        }))
+      });
+      
+      console.log('API Response:', res.data);
       console.log('Raw output text:', res.data.output);
 
       // Parse route from the output text
       const routeData = parseRouteFromText(res.data.output);
       console.log('Parsed route data:', routeData);
 
+      // Tách JSON khỏi response để hiển thị
+      const displayText = extractTextFromResponse(res.data.output);
+      const fullText = res.data.output || "No response from AI.";
+
       setMessages((msgs) => {
-        const formattedText = formatMessageText(res.data.output || "No response from AI.");
-        const updated = [...msgs, { sender: 'bot', text: formattedText }];
-        saveMessage('bot', formattedText);
+        const updated = [...msgs, { sender: 'bot', text: displayText }];
+        saveMessage('bot', fullText); // Lưu full text (bao gồm JSON) vào database
         return updated;
       });
 
       if (routeData) {
         setRoute(routeData);
+        setSelectedDay('day1'); // Reset to first day when new route is generated
       } else {
         setRoute({ day1: [], day2: [], day3: [] });
       }
@@ -326,7 +513,6 @@ const Chat = ({ user }) => {
     setSessionId(newSessionId);
     setMessages([{ sender: 'bot', text: "Hi, I'm vivu!" }]);
     setRoute(() => {
-      // Test route data
       return {
         day1: [
           {"name": "Chùa Dơi", "latitude": 9.602521, "longitude": 105.968685, "time": "06:00"},
@@ -344,28 +530,33 @@ const Chat = ({ user }) => {
         ]
       };
     });
+    setSelectedDay('day1');
+    setIsMapFullscreen(false);
   };
 
   // Chọn lại phiên chat cũ
   const handleSelectSession = (sid) => {
     localStorage.setItem('vivubot_session_id', sid);
     setSessionId(sid);
+    setSelectedDay('day1');
+    setIsMapFullscreen(false);
   };
 
   return (
-    <Flex h="100vh">
+    <Flex h="100vh" overflow="hidden">
       {/* Sidebar */}
       <Sidebar
         sessions={sessions}
         onNewChat={handleNewChat}
         onSelectSession={handleSelectSession}
+        onDeleteSession={handleDeleteSession}
         currentSessionId={sessionId}
       />
   
       {/* Chat area */}
       <Flex direction="column" flex="2" p={6} bg="gray.50" overflow="hidden">
         {/* Messages */}
-        <Box flex={1} my={6} overflowY="auto">
+        <Box flex={1} my={6} overflowY="auto" maxH="calc(100vh - 180px)">
           <VStack spacing={4} align="stretch">
             {/* Header */}
             <Box>
@@ -444,9 +635,30 @@ const Chat = ({ user }) => {
         </InputGroup>
       </Flex>
   
-      {/* Map Preview */}
-      <Box flex="1" h="100vh" overflowY="auto" borderLeft="1px solid" borderColor="gray.200">
-        <MapPreview route={route} />
+      {/* Map Preview with Controls */}
+      <Box 
+        flex="1" 
+        h="100vh" 
+        position="relative"
+        overflow="hidden"
+        borderLeft="1px solid" 
+        borderColor="gray.200"
+      >
+        <Box 
+          h="100%" 
+          w="100%"
+          className={isMapFullscreen ? "map-container-fullscreen" : ""}
+        >
+          <MapPreview route={route} selectedDay={selectedDay} />
+        </Box>
+        {/* Itinerary Panel */}
+        <ItineraryPanel
+          route={route}
+          selectedDay={selectedDay}
+          onDaySelect={setSelectedDay}
+          isVisible={showItinerary}
+          onClose={onCloseItinerary}
+        />
       </Box>
     </Flex>
   );

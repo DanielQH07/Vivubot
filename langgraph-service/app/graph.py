@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph
 from typing import TypedDict
-from app.steps import preprocess_input, call_ai, save_result, return_output
+from app.steps import preprocess_input, rag_retrieve_context, call_ai, save_result, return_output
 
 class TravelState(TypedDict):
     user_input: str
@@ -16,6 +16,7 @@ def build_travel_graph():
 
     # Add nodes
     graph.add_node("PreprocessInput", preprocess_input)
+    graph.add_node("RAGRetrieveContext", rag_retrieve_context)
     graph.add_node("CallAI", call_ai)
     graph.add_node("SaveResult", save_result)
     graph.add_node("ReturnOutput", return_output)
@@ -25,7 +26,8 @@ def build_travel_graph():
     graph.set_finish_point("ReturnOutput")
 
     # Add edges
-    graph.add_edge("PreprocessInput", "CallAI")
+    graph.add_edge("PreprocessInput", "RAGRetrieveContext")
+    graph.add_edge("RAGRetrieveContext", "CallAI")
     graph.add_edge("CallAI", "SaveResult")
     graph.add_edge("SaveResult", "ReturnOutput")
 
