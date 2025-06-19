@@ -140,6 +140,9 @@ const Sidebar = ({ sessions = [], onNewChat, onSelectSession, currentSessionId, 
           </HStack>
         </MenuButton>
         <MenuList>
+          <MenuItem onClick={() => navigate('/preferences')}>
+            Preferences
+          </MenuItem>
           <MenuItem
             onClick={() => {
               localStorage.removeItem('vivubot_session_id');

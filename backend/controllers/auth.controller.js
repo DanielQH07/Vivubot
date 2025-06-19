@@ -24,8 +24,24 @@ export const registerUser = async (req, res) => {
         const newUser = new User({ username, email, password: hashedPassword });
         await newUser.save();
 
+        // Generate JWT token after successful registration
+        if (!process.env.JWT_SECRET) {
+            console.error('❌ JWT_SECRET not configured');
+            return res.status(500).json({ message: "Server configuration error" });
+        }
+
+        const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
         console.log(`✅ User registered: ${email}`);
-        res.status(201).json({ message: "User registered successfully" });
+        res.status(201).json({ 
+            message: "User registered successfully",
+            token,
+            user: {
+                id: newUser._id,
+                username: newUser.username,
+                email: newUser.email
+            }
+        });
     } catch (err) {
         console.error('❌ Register error:', err);
         res.status(500).json({ error: err.message });
@@ -82,5 +98,79 @@ export const loginUser = async (req, res) => {
     } catch (err) {
         console.error('❌ Login error:', err);
         res.status(500).json({ error: err.message });
+    }
+};
+
+export const updatePreferences = async (req, res) => {
+    // Lấy userId từ req.user (được đặt bởi authMiddleware)
+    const userId = req.user.id;
+
+    // Lấy TẤT CẢ các trường liên quan đến preferences từ req.body
+    // Đây là nơi quan trọng nhất: đảm bảo bạn trích xuất tất cả các trường mà frontend gửi lên.
+    const {
+        travelStyle,
+        locationType,
+        cuisineType,
+        budgetLevel,
+        travelTime,
+        customTravelStyle,
+        customLocationType,
+        customCuisineType,
+        customBudgetLevel,
+        customTravelTime,
+    } = req.body;
+
+    try {
+        // Tìm người dùng theo ID
+        const user = await User.findById(userId);
+        if (!user) {
+            console.error(`❌ User with ID ${userId} not found for preferences update.`);
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Cập nhật từng trường trong đối tượng preferences
+        // Sử dụng $set để cập nhật các trường con mà không ghi đè toàn bộ đối tượng preferences
+        // Đảm bảo chỉ cập nhật những trường thực sự được gửi từ frontend hoặc có giá trị.
+        const updateFields = {};
+
+        if (travelStyle !== undefined) updateFields['preferences.travelStyle'] = travelStyle;
+        if (locationType !== undefined) updateFields['preferences.locationType'] = locationType;
+        if (cuisineType !== undefined) updateFields['preferences.cuisineType'] = cuisineType;
+        if (budgetLevel !== undefined) updateFields['preferences.budgetLevel'] = budgetLevel;
+        if (travelTime !== undefined) updateFields['preferences.travelTime'] = travelTime;
+
+        if (customTravelStyle !== undefined) updateFields['preferences.customTravelStyle'] = customTravelStyle;
+        if (customLocationType !== undefined) updateFields['preferences.customLocationType'] = customLocationType;
+        if (customCuisineType !== undefined) updateFields['preferences.customCuisineType'] = customCuisineType;
+        if (customBudgetLevel !== undefined) updateFields['preferences.customBudgetLevel'] = customBudgetLevel;
+        if (customTravelTime !== undefined) updateFields['preferences.customTravelTime'] = customTravelTime;
+
+        // Sử dụng findByIdAndUpdate với $set để cập nhật các trường cụ thể
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $set: updateFields }, // $set sẽ cập nhật các trường được chỉ định mà không ảnh hưởng đến các trường khác
+            { new: true, runValidators: true } // `new: true` trả về document đã được cập nhật
+        );
+
+        console.log(`✅ Preferences updated for user: ${userId}`);
+        res.status(200).json({ message: 'Preferences updated successfully', preferences: updatedUser.preferences });
+
+    } catch (err) {
+        console.error('❌ Error updating preferences:', err);
+        res.status(500).json({ message: 'Server error', error: err.message }); // Gửi lỗi chi tiết hơn
+    }
+};
+
+export const getPreferences = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const user = await User.findById(userId).select('preferences');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.status(200).json({ preferences: user.preferences });
+    } catch (err) {
+        console.error('❌ Error fetching preferences:', err);
+        res.status(500).json({ message: 'Server error' });
     }
 };

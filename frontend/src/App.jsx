@@ -8,6 +8,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ChatPage from "./pages/ChatPage";
 import ExplorePage from "./pages/ExplorePage";
+import PreferencesPage from "./pages/PreferencesPage";
 import { useColorModeValue } from "@chakra-ui/react";
 
 function App() {
@@ -61,7 +62,7 @@ function App() {
           path="/signup" 
           element={
             !isAuthenticated ? 
-            <SignupPage /> : 
+            <SignupPage onLogin={handleLogin} /> : 
             <Navigate to="/chat" replace />
           } 
         />
@@ -92,6 +93,14 @@ function App() {
         <Route 
           path="/" 
           element={<HomePage />}
+        />
+        <Route 
+          path="/preferences" 
+          element={
+            isAuthenticated ? 
+            <PreferencesPage /> : 
+            <Navigate to="/login" replace />
+          }
         />
       </Routes>
     </Box>

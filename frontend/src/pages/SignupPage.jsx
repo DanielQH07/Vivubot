@@ -4,7 +4,7 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 
-const SignupPage = () => {
+const SignupPage = ({ onLogin }) => {
   const [username, setUsername]       = useState('');
   const [email, setEmail]             = useState('');
   const [password, setPassword]       = useState('');
@@ -88,8 +88,15 @@ const SignupPage = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Signup failed');
 
+      // Lưu token và user data vào localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Gọi callback onLogin để cập nhật state của App
+      onLogin(data.token, data.user);
+
       toast({ title: 'Đăng ký thành công', description: data.message, status: 'success', duration: 3000, isClosable: true });
-      navigate('/login');
+      navigate('/preferences');
     } catch (err) {
       toast({ title: 'Error', description: err.message, status: 'error', duration: 4000, isClosable: true });
     } finally {

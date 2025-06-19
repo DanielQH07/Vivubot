@@ -50,7 +50,7 @@ const Navbar = ({ isAuthenticated, user, onLogout, onToggleItinerary }) => {
                                     Login
                                 </Button>
                             </Link>
-                            <Link to={"/register"}>
+                            <Link to={"/signup"}>
                                 <Button colorScheme={"blue"} size="sm">
                                     Register
                                 </Button>
